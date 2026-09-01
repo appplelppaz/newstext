@@ -32,6 +32,7 @@ SECTIONS = [
     {"id": "street-talk",  "name": "街の会話",         "kind": "dialogue", "blurb": "現地の友人同士の日常会話"},
     {"id": "life-column",  "name": "暮らしのコラム",   "kind": "blog",     "blurb": "生活・習慣・世相"},
     {"id": "buzzword",     "name": "今週のことば",     "kind": "buzzword", "blurb": "流行語と時事キーワード"},
+    {"id": "grammar",      "name": "今週の文法",       "kind": "grammar",  "blurb": "今週の記事から文法を1点、深く"},
     {"id": "culture",      "name": "カルチャー案内",   "kind": "culture",  "blurb": "料理・音楽・映画・行事"},
 ]
 SECTION_IDS = [s["id"] for s in SECTIONS]
@@ -86,6 +87,8 @@ def validate_article(path, art):
 
     if section == "buzzword":
         validate_entries(path, art)
+    elif section == "grammar":
+        validate_lesson(path, art, lang)
     else:
         validate_segments(path, art, lang)
 
@@ -98,6 +101,41 @@ def validate_entries(path, art):
         for key in ("term", "meaning", "note", "example", "exampleJa"):
             if not e.get(key):
                 err(path, f"entries[{i}].{key} が空")
+
+
+def validate_lesson(path, art, lang):
+    """文法コーナー。例文には必ず訳を付ける（訳のない例文は教材にならない）。"""
+    lesson = art.get("lesson")
+    if not lesson:
+        return err(path, "grammar なのに lesson がない")
+
+    for key in ("point", "pointJa", "summary", "pitfall"):
+        if not lesson.get(key):
+            err(path, f"lesson.{key} が空")
+
+    blocks = lesson.get("blocks") or []
+    if not blocks:
+        err(path, "lesson.blocks が空")
+    for i, b in enumerate(blocks, 1):
+        if not b.get("heading") or not b.get("body"):
+            err(path, f"lesson.blocks[{i}] に heading / body が揃っていない")
+        if not b.get("examples"):
+            err(path, f"lesson.blocks[{i}] に例文がない")
+        for j, ex in enumerate(b.get("examples", []), 1):
+            if not ex.get("text") or not ex.get("ja"):
+                err(path, f"lesson.blocks[{i}].examples[{j}] に text / ja が揃っていない")
+            if lang == "zh" and not ex.get("reading"):
+                err(path, f"lesson.blocks[{i}].examples[{j}] にピンインがない")
+
+    for i, c in enumerate(lesson.get("contrast", []), 1):
+        for key in ("a", "aJa", "b", "bJa", "note"):
+            if not c.get(key):
+                err(path, f"lesson.contrast[{i}].{key} が空")
+
+    for i, m in enumerate(lesson.get("mistakes", []), 1):
+        for key in ("wrong", "right", "rightJa", "note"):
+            if not m.get(key):
+                err(path, f"lesson.mistakes[{i}].{key} が空")
 
 
 def validate_segments(path, art, lang):

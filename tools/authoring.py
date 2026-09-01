@@ -31,9 +31,11 @@ def seg(i, original, translation, words=(), grammar="", speaker=None):
     return d
 
 
-def write(meta, segments=None, entries=None):
+def write(meta, segments=None, entries=None, lesson=None):
     art = {"metadata": meta}
-    if entries is not None:
+    if lesson is not None:
+        art["lesson"] = lesson
+    elif entries is not None:
         art["entries"] = entries
     else:
         art["segments"] = segments
@@ -44,5 +46,10 @@ def write(meta, segments=None, entries=None):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(art, f, ensure_ascii=False, indent=2)
         f.write("\n")
-    n = len(entries) if entries is not None else len(segments)
+    if lesson is not None:
+        n = len(lesson.get("blocks", []))
+    elif entries is not None:
+        n = len(entries)
+    else:
+        n = len(segments)
     print(f"✓ {os.path.relpath(path, ROOT)}  ({n})")

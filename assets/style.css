@@ -347,3 +347,82 @@ h2.block-head {
   .masthead, .reading-tools, .pager, .filters { display: none; }
   body { background: #fff; }
 }
+
+/* ── 今週の文法 ─────────────────────────────── */
+.lesson { max-width: 46rem; margin: 0 auto; }
+
+.lesson-point {
+  border-top: 3px solid var(--accent); border-bottom: 1px solid var(--rule);
+  padding: 1.1rem 0 1rem; margin-bottom: 2rem; text-align: center;
+}
+.lesson-point-orig {
+  font-family: var(--latin); font-size: 1.7rem; font-weight: 700; margin: 0 0 .2rem;
+  color: var(--accent);
+}
+.lesson-point-orig[lang="zh"] { font-family: var(--han); }
+.lesson-point-ja { font-family: var(--serif); font-size: 1.05rem; margin: 0 0 .6rem; }
+.lesson-summary {
+  font-size: .92rem; color: var(--ink-soft); margin: 0 auto; max-width: 32rem; line-height: 1.9;
+}
+
+.lesson-block { margin-bottom: 2.25rem; }
+.lesson-heading {
+  font-family: var(--serif); font-size: 1.08rem; margin: 0 0 .7rem;
+  display: flex; align-items: baseline; gap: .55rem;
+  border-bottom: 1px solid var(--rule); padding-bottom: .35rem;
+}
+.lesson-num {
+  font-family: var(--latin); font-size: .72rem; font-weight: 700;
+  background: var(--accent); color: var(--paper);
+  width: 1.5rem; height: 1.5rem; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+}
+.lesson-body { margin: 0 0 .9rem; line-height: 2; font-size: .95rem; }
+
+.ex-list { list-style: none; margin: 0; padding: 0; }
+.ex-item {
+  border-left: 3px solid var(--rule); padding: .1rem 0 .1rem .85rem; margin-bottom: .9rem;
+}
+.ex-text { font-family: var(--latin); font-size: 1.05rem; margin: 0; line-height: 1.7; }
+.ex-text[lang="zh"] { font-family: var(--han); font-size: 1.12rem; }
+.ex-reading { font-family: var(--latin); font-size: .78rem; color: var(--ink-faint); margin: .1rem 0 0; }
+.ex-ja { font-size: .88rem; color: var(--ink-soft); margin: .2rem 0 0; }
+.ex-note { font-size: .8rem; color: var(--ink-faint); margin: .25rem 0 0; }
+
+.contrast { margin-bottom: 1.4rem; }
+.contrast-label { font-size: .8rem; color: var(--accent); font-weight: 700; margin: 0 0 .4rem; }
+.contrast-pair { display: grid; gap: .75rem; grid-template-columns: 1fr 1fr; }
+.contrast-pair > div {
+  background: var(--paper-alt); border-radius: 3px; padding: .6rem .75rem; min-width: 0;
+}
+.contrast-note {
+  font-size: .85rem; color: var(--ink-soft); margin: .5rem 0 0;
+  border-left: 3px solid var(--accent-2, var(--accent)); padding-left: .7rem; line-height: 1.85;
+}
+
+.mistake {
+  background: var(--gloss-bg); border: 1px solid var(--rule);
+  border-radius: 3px; padding: .8rem 1rem; margin-bottom: 1rem;
+}
+.mistake-wrong, .mistake-right {
+  font-family: var(--latin); font-size: 1rem; margin: 0 0 .25rem; line-height: 1.7;
+}
+.mistake-wrong[lang="zh"], .mistake-right[lang="zh"] { font-family: var(--han); }
+.mistake-wrong { color: var(--ink-faint); text-decoration: line-through .08em; }
+.xmark, .omark { font-family: var(--sans); font-weight: 700; margin-right: .45rem; text-decoration: none; display: inline-block; }
+.xmark { color: #b3271e; }
+.omark { color: #1c7a4a; }
+.mistake-note { font-size: .83rem; color: var(--ink-soft); margin: .45rem 0 0; line-height: 1.85; }
+
+.lesson-pitfall {
+  background: var(--paper-alt); border-left: 4px solid var(--accent);
+  padding: .9rem 1.1rem; font-size: .9rem; line-height: 1.95; color: var(--ink-soft);
+  margin: 2rem 0 0;
+}
+.lesson-pitfall strong {
+  display: block; color: var(--ink); font-size: .72rem; letter-spacing: .16em; margin-bottom: .3rem;
+}
+
+@media (max-width: 860px) {
+  .contrast-pair { grid-template-columns: 1fr; }
+}

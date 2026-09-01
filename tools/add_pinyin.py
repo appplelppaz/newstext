@@ -61,6 +61,25 @@ def process(path, force=False):
 
     if art.get("metadata", {}).get("language") != "zh":
         return None
+
+    # 文法コーナーの例文にもピンインが要る（build.py が必須にしている）
+    lesson = art.get("lesson")
+    if lesson:
+        n = 0
+        for block in lesson.get("blocks", []):
+            for ex in block.get("examples", []):
+                if not ex.get("reading") or force:
+                    ex["reading"] = sentence_pinyin(ex["text"]); n += 1
+        for row in lesson.get("contrast", []):
+            for side in ("a", "b"):
+                key = side + "Reading"
+                if not row.get(key) or force:
+                    row[key] = sentence_pinyin(row[side]); n += 1
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(art, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        return n
+
     if not art.get("segments"):
         return 0                              # buzzword 面は segments を持たない
 

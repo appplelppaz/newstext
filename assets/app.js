@@ -7,7 +7,7 @@
 
   var FLAG = { en: "🇬🇧", zh: "🇨🇳", es: "🇪🇸", fr: "🇫🇷" };
   var LANG_NAME = { en: "英語", zh: "中国語", es: "スペイン語", fr: "フランス語" };
-  var KIND_NAME = { news: "ニュース", dialogue: "会話", blog: "読み物", buzzword: "語彙", culture: "読み物" };
+  var KIND_NAME = { news: "ニュース", dialogue: "会話", blog: "読み物", buzzword: "語彙", grammar: "文法", culture: "読み物" };
 
   /* ── 小道具 ────────────────────────────────── */
 
@@ -274,6 +274,88 @@
     return wrap;
   }
 
+  /** 文法コーナーの例文。原語・ピンイン・訳を必ず縦に並べる。 */
+  function exampleNode(ex, lang) {
+    return el("li", { class: "ex-item" }, [
+      el("p", { class: "ex-text", lang: lang, text: ex.text }),
+      ex.reading ? el("p", { class: "ex-reading", text: ex.reading }) : null,
+      el("p", { class: "ex-ja", text: ex.ja }),
+      ex.note ? el("p", { class: "ex-note", text: ex.note }) : null
+    ]);
+  }
+
+  function renderLesson(art) {
+    var lang = art.metadata.language;
+    var L = art.lesson;
+    var wrap = el("div", { class: "lesson" });
+
+    wrap.appendChild(el("div", { class: "lesson-point" }, [
+      el("p", { class: "lesson-point-orig", lang: lang, text: L.point }),
+      el("p", { class: "lesson-point-ja", text: L.pointJa }),
+      el("p", { class: "lesson-summary", text: L.summary })
+    ]));
+
+    (L.blocks || []).forEach(function (b, i) {
+      var box = el("section", { class: "lesson-block" });
+      box.appendChild(el("h2", { class: "lesson-heading" }, [
+        el("span", { class: "lesson-num", text: String(i + 1) }), b.heading
+      ]));
+      box.appendChild(el("p", { class: "lesson-body", text: b.body }));
+      var list = el("ul", { class: "ex-list" });
+      (b.examples || []).forEach(function (ex) { list.appendChild(exampleNode(ex, lang)); });
+      box.appendChild(list);
+      wrap.appendChild(box);
+    });
+
+    if ((L.contrast || []).length) {
+      var c = el("section", { class: "lesson-block" });
+      c.appendChild(el("h2", { class: "lesson-heading", text: "見分ける" }));
+      L.contrast.forEach(function (row) {
+        c.appendChild(el("div", { class: "contrast" }, [
+          row.label ? el("p", { class: "contrast-label", text: row.label }) : null,
+          el("div", { class: "contrast-pair" }, [
+            el("div", {}, [
+              el("p", { class: "ex-text", lang: lang, text: row.a }),
+              row.aReading ? el("p", { class: "ex-reading", text: row.aReading }) : null,
+              el("p", { class: "ex-ja", text: row.aJa })
+            ]),
+            el("div", {}, [
+              el("p", { class: "ex-text", lang: lang, text: row.b }),
+              row.bReading ? el("p", { class: "ex-reading", text: row.bReading }) : null,
+              el("p", { class: "ex-ja", text: row.bJa })
+            ])
+          ]),
+          el("p", { class: "contrast-note", text: row.note })
+        ]));
+      });
+      wrap.appendChild(c);
+    }
+
+    if ((L.mistakes || []).length) {
+      var m = el("section", { class: "lesson-block" });
+      m.appendChild(el("h2", { class: "lesson-heading", text: "ありがちな誤り" }));
+      L.mistakes.forEach(function (row) {
+        m.appendChild(el("div", { class: "mistake" }, [
+          el("p", { class: "mistake-wrong", lang: lang }, [
+            el("span", { class: "xmark", text: "✕" }), row.wrong
+          ]),
+          el("p", { class: "mistake-right", lang: lang }, [
+            el("span", { class: "omark", text: "○" }), row.right
+          ]),
+          el("p", { class: "ex-ja", text: row.rightJa }),
+          el("p", { class: "mistake-note", text: row.note })
+        ]));
+      });
+      wrap.appendChild(m);
+    }
+
+    wrap.appendChild(el("p", { class: "lesson-pitfall" }, [
+      el("strong", { text: "つまずきやすい点" }), L.pitfall
+    ]));
+
+    return wrap;
+  }
+
   function renderVocabTable(art) {
     var lang = art.metadata.language;
     var rows = [];
@@ -343,7 +425,9 @@
       wrap.appendChild(tools);
     }
 
-    wrap.appendChild(art.entries ? renderEntries(art) : renderSegments(art));
+    if (art.lesson) wrap.appendChild(renderLesson(art));
+    else if (art.entries) wrap.appendChild(renderEntries(art));
+    else wrap.appendChild(renderSegments(art));
 
     if (m.trivia) {
       wrap.appendChild(el("p", { class: "trivia" }, [
