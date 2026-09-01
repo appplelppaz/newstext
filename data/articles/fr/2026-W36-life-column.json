@@ -1,0 +1,274 @@
+{
+  "metadata": {
+    "issue": "2026-W36",
+    "language": "fr",
+    "country": "フランス",
+    "publishDate": "2026-09-01",
+    "targetLanguage": "ja",
+    "id": "fr-2026-W36-life-column",
+    "section": "life-column",
+    "kind": "blog",
+    "title": "Septembre, ou l'art français de tout recommencer",
+    "titleJa": "9月、フランス流「やり直し」の作法",
+    "leadJa": "フランス人にとって一年の始まりは1月ではなく9月かもしれません。バカンスが終わり、学校も職場も政治も出版も、いっせいに動き出す ― この国民的な「仕切り直し」の感覚を、書き下ろしのコラムで味わってください。",
+    "category": "生活",
+    "level": "中級",
+    "trivia": "9月に売れるのが agenda（手帳）。フランスの手帳は1月始まりではなく9月始まりのものが本屋に平積みされます。学年が9月に始まるからです。"
+  },
+  "segments": [
+    {
+      "id": 1,
+      "original": "En France, la vraie nouvelle année ne commence pas en janvier. Elle commence en septembre.",
+      "translation": "フランスでは、本当の新年は1月に始まるのではない。9月に始まるのだ。",
+      "words": [
+        {
+          "word": "vrai",
+          "surface": "vraie",
+          "meaning": "本当の",
+          "pos": "形容詞"
+        },
+        {
+          "word": "commencer",
+          "surface": "commence",
+          "meaning": "始まる",
+          "pos": "動詞"
+        }
+      ],
+      "grammar": "ne commence pas en janvier / Elle commence en septembre と、否定文のあとに肯定文を続けて対比を作る書き方。文章に切れ味が出る。"
+    },
+    {
+      "id": 2,
+      "original": "Tout le pays part en vacances au mois d'août, et tout le pays revient en même temps.",
+      "translation": "国じゅうが8月に休暇へ出かけ、そして国じゅうが同時に戻ってくる。",
+      "words": [
+        {
+          "word": "partir en vacances",
+          "surface": "part en vacances",
+          "meaning": "休暇に出かける",
+          "pos": "動詞句"
+        },
+        {
+          "word": "en même temps",
+          "surface": "en même temps",
+          "meaning": "同時に",
+          "pos": "副詞句"
+        }
+      ],
+      "grammar": "Tout le pays を主語に繰り返すことでリズムを作っている。tout le pays は単数扱いなので動詞も part / revient と単数形。"
+    },
+    {
+      "id": 3,
+      "original": "On appelle ce moment la rentrée, et il n'existe pas vraiment d'équivalent en japonais.",
+      "translation": "この時期を「ラ・ラントレ」と呼ぶが、日本語にぴったり当たる言葉はない。",
+      "words": [
+        {
+          "word": "appeler",
+          "surface": "appelle",
+          "meaning": "〜と呼ぶ",
+          "pos": "動詞"
+        },
+        {
+          "word": "équivalent",
+          "surface": "équivalent",
+          "meaning": "同等のもの・対応語",
+          "pos": "名詞"
+        }
+      ],
+      "grammar": "il n'existe pas de + 無冠詞名詞で「〜は存在しない」。否定文では不定冠詞 un/une/des が de に変わる規則が働いている。"
+    },
+    {
+      "id": 4,
+      "original": "Ce n'est pas seulement la rentrée des classes : il y a aussi la rentrée politique, la rentrée littéraire et même la rentrée sociale.",
+      "translation": "それは学校の新学期だけを指すのではない。政界の再始動があり、出版界の新刊シーズンがあり、労働運動の再開まである。",
+      "words": [
+        {
+          "word": "ne...pas seulement",
+          "surface": "n'est pas seulement",
+          "meaning": "〜だけではない",
+          "pos": "副詞句"
+        },
+        {
+          "word": "rentrée littéraire",
+          "surface": "rentrée littéraire",
+          "meaning": "文学の新刊シーズン",
+          "pos": "名詞句"
+        },
+        {
+          "word": "même",
+          "surface": "même",
+          "meaning": "〜さえも",
+          "pos": "副詞"
+        }
+      ],
+      "grammar": "コロン（:）は前文の内容を具体的に言い換えるときに使う。フランス語では英語より頻繁に、説明の合図として登場する。"
+    },
+    {
+      "id": 5,
+      "original": "Dans les librairies, des centaines de romans sortent en quelques semaines, et les critiques se disputent pour savoir lequel sera le livre de l'automne.",
+      "translation": "書店では数週間のうちに何百もの小説が刊行され、批評家たちはどれが今秋の一冊になるかをめぐって言い争う。",
+      "words": [
+        {
+          "word": "librairie",
+          "surface": "librairies",
+          "meaning": "書店",
+          "pos": "名詞"
+        },
+        {
+          "word": "sortir",
+          "surface": "sortent",
+          "meaning": "発売される",
+          "pos": "動詞"
+        },
+        {
+          "word": "se disputer",
+          "surface": "se disputent",
+          "meaning": "言い争う",
+          "pos": "動詞"
+        },
+        {
+          "word": "lequel",
+          "surface": "lequel",
+          "meaning": "どれが（疑問代名詞）",
+          "pos": "代名詞"
+        }
+      ],
+      "grammar": "pour savoir lequel sera... は間接疑問。疑問詞 lequel のあとは平叙文の語順のままで、倒置しない。"
+    },
+    {
+      "id": 6,
+      "original": "Au bureau, la première question n'est jamais professionnelle : « Tu as passé de bonnes vacances ? »",
+      "translation": "職場で最初に交わされる質問は、決して仕事の話ではない。「休暇はよかった？」だ。",
+      "words": [
+        {
+          "word": "bureau",
+          "surface": "bureau",
+          "meaning": "職場・オフィス",
+          "pos": "名詞"
+        },
+        {
+          "word": "ne...jamais",
+          "surface": "n'est jamais",
+          "meaning": "決して〜ない",
+          "pos": "副詞句"
+        },
+        {
+          "word": "passer de bonnes vacances",
+          "surface": "passé de bonnes vacances",
+          "meaning": "よい休暇を過ごす",
+          "pos": "動詞句"
+        }
+      ],
+      "grammar": "de bonnes vacances は des ではなく de。形容詞が複数名詞の前に来ると des が de になるという書き言葉の規則による。"
+    },
+    {
+      "id": 7,
+      "original": "Il faut y répondre, sinon on passe pour quelqu'un de froid.",
+      "translation": "これには答えなければならない。さもないと、冷たい人だと思われてしまう。",
+      "words": [
+        {
+          "word": "il faut",
+          "surface": "Il faut",
+          "meaning": "〜しなければならない",
+          "pos": "非人称動詞"
+        },
+        {
+          "word": "sinon",
+          "surface": "sinon",
+          "meaning": "さもないと",
+          "pos": "接続詞"
+        },
+        {
+          "word": "passer pour",
+          "surface": "passe pour",
+          "meaning": "〜と見なされる",
+          "pos": "動詞句"
+        }
+      ],
+      "grammar": "quelqu'un de froid のように、quelqu'un / quelque chose を形容詞で修飾するときは必ず de を挟み、形容詞は男性単数形にする。"
+    },
+    {
+      "id": 8,
+      "original": "Puis viennent les inscriptions : judo, piano, poterie, cours de yoga du mardi soir.",
+      "translation": "続いて申し込みの季節が来る。柔道、ピアノ、陶芸、火曜夜のヨガ教室。",
+      "words": [
+        {
+          "word": "puis",
+          "surface": "Puis",
+          "meaning": "それから",
+          "pos": "副詞"
+        },
+        {
+          "word": "inscription",
+          "surface": "inscriptions",
+          "meaning": "登録・申し込み",
+          "pos": "名詞"
+        },
+        {
+          "word": "poterie",
+          "surface": "poterie",
+          "meaning": "陶芸",
+          "pos": "名詞"
+        }
+      ],
+      "grammar": "Puis viennent les inscriptions は主語と動詞の倒置。副詞で文を始めると、書き言葉ではこのように動詞を先に置くことがある。"
+    },
+    {
+      "id": 9,
+      "original": "Chaque année, on jure de s'y tenir. Chaque année, on abandonne vers la Toussaint.",
+      "translation": "毎年、続けると誓う。そして毎年、諸聖人の日のころには投げ出している。",
+      "words": [
+        {
+          "word": "jurer",
+          "surface": "jure",
+          "meaning": "誓う",
+          "pos": "動詞"
+        },
+        {
+          "word": "s'y tenir",
+          "surface": "s'y tenir",
+          "meaning": "それを守り続ける",
+          "pos": "動詞句"
+        },
+        {
+          "word": "abandonner",
+          "surface": "abandonne",
+          "meaning": "やめる・投げ出す",
+          "pos": "動詞"
+        },
+        {
+          "word": "Toussaint",
+          "surface": "Toussaint",
+          "meaning": "諸聖人の日（11月1日）",
+          "pos": "名詞"
+        }
+      ],
+      "grammar": "Chaque année を二度繰り返し、対になる二文を並べることで皮肉を効かせている。文学的な書き言葉でよく使われる技法。"
+    },
+    {
+      "id": 10,
+      "original": "Mais peu importe : en septembre, on a le droit de croire qu'on sera quelqu'un de mieux.",
+      "translation": "だがそれはどうでもいい。9月には、自分がもっとましな人間になれると信じる権利があるのだから。",
+      "words": [
+        {
+          "word": "peu importe",
+          "surface": "peu importe",
+          "meaning": "どうでもよい・構わない",
+          "pos": "動詞句"
+        },
+        {
+          "word": "avoir le droit de",
+          "surface": "a le droit de",
+          "meaning": "〜する権利がある",
+          "pos": "動詞句"
+        },
+        {
+          "word": "mieux",
+          "surface": "mieux",
+          "meaning": "よりよい・ましな",
+          "pos": "副詞"
+        }
+      ],
+      "grammar": "croire que のあとは直説法（sera）。croire が否定や疑問になると接続法をとることがあるが、肯定文では直説法のまま。"
+    }
+  ]
+}

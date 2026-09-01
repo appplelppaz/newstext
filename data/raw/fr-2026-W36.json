@@ -1,0 +1,546 @@
+{
+  "issue": "2026-W36",
+  "language": "fr",
+  "country": "フランス",
+  "weekStart": "2026-08-31",
+  "weekEnd": "2026-09-06",
+  "fetchedAt": "2026-09-01T07:46:09",
+  "articles": [
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Rentrée scolaire pour 11,6 millions d'élèves, interdiction du portable au lycée",
+      "summary": "Quelque 11,6 millions d'écoliers, collégiens et lycéens font mardi leur rentrée, marquée par quelques nouveautés, comme l'interdiction du portable au lycée, et pour certains par des perturbations après une importante cyberattaque ayant visé l'Éducation nationale. Le point avec Michaël Marcilloux, co-secrétaire général de la CGT Éduc'Action. Il était l'invité de l'antenne de France 24 ce mardi 1er septembre.",
+      "url": "https://www.france24.com/fr/vid%C3%A9o/20260901-rentr%C3%A9e-scolaire-entr%C3%A9e-en-vigueur-de-l-interdiction-du-portable-au-lyc%C3%A9e"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Le monument argentin Lionel Messi annonce sa retraite internationale",
+      "summary": "À 39 ans, Lionel Messi a annoncé la fin de sa carrière internationale, après 207 matchs avec l’Argentine. Avec 125 buts, il est largement le meilleur buteur de l’histoire de sa sélection.",
+      "url": "https://www.france24.com/fr/%C3%A9missions/sports/20260901-le-monument-argentin-lionel-messi-annonce-sa-retraite-internationale"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Crue dévastatrice dans l'Himalaya : le bilan dépasse les 1 000 morts au Népal et en Chine",
+      "summary": "La crue dévastatrice survenue mercredi dernier dans l'Himalaya a fait 987 morts au Népal, a annoncé mardi l'autorité népalaise chargée des situations d'urgence. Le bilan provisoire de la catastrophe atteint ainsi 1 003 morts en y ajoutant les 16 victimes recensées en Chine. Les autorités des deux pays sont par ailleurs toujours sans nouvelles de près de 4 500 personnes.",
+      "url": "https://www.france24.com/fr/asie-pacifique/20260901-crue-d%C3%A9vastatrice-himalaya-nepal-chine-tibet-bilan-d%C3%A9passe-1000-morts"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Colombie : vingt guérilleros tués dans des bombardements ordonnés par le nouveau gouvernement",
+      "summary": "Le président colombien Abelardo de la Espriella a affirmé lundi dans une vidéo relayée sur les réseaux sociaux que vingt guérilleros ont été tués dans le pays dans des bombardements ordonnés par son nouveau gouvernement sur des zones contrôlées par des insurgés. Il s'agit des bombardements les plus meurtriers depuis l'arrivée au pouvoir, le 7 août, du nouveau président de la Colombie.",
+      "url": "https://www.france24.com/fr/am%C3%A9riques/20260901-colombie-vingt-gu%C3%A9rilleros-tu%C3%A9s-bombardements-ordonn%C3%A9s-par-nouveau-gouvernement-espriella"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "En direct : attaque russe \"massive\" à Kiev, un dépôt ferroviaire touché",
+      "summary": "Une attaque \"massive\" a fait de nombreuses victimes à Kiev et dans sa région. Sept personnes ont été tuées dans une frappe de missiles balistiques russes contre un dépôt ferroviaire. Le port russe d'Oust-Louga, sur le golfe de Finlande, a lui été visé par une attaque de drones ukrainiens. Suivez notre direct.",
+      "url": "https://www.france24.com/fr/europe/20260901-en-direct-ukraine-russie-attaque-russe-massive-morts-kiev"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "La Cour suprême autorise la construction de la salle de bal de Donald Trump à la Maison Blanche",
+      "summary": "La Cour suprême des États-Unis a autorisé lundi Donald Trump à poursuivre les travaux de sa salle de bal à la Maison Blanche, suspendant par cinq voix contre quatre la décision d'appel qui bloquait le chantier, sans toutefois se prononcer sur le fond du recours déposé par le National Trust for Historic Preservation.",
+      "url": "https://www.france24.com/fr/am%C3%A9riques/20260901-etats-unis-cour-supreme-autoriseconstruction-salle-de-bal-donald-trump-maison-blanche"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "🔴 Meurtre du rappeur Tupac Shakur : Duane Davis, ancien membre de gang, reconnu coupable",
+      "summary": "",
+      "url": "https://www.france24.com/fr/am%C3%A9riques/20260901-etats-unis-meurtre-du-rappeur-tupac-shakur-duane-davis-ex-membre-de-gang-reconnu-coupable"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Meurtre du rappeur Tupac Shakur : Duane Davis, ancien membre de gang, reconnu coupable",
+      "summary": "Duane \"Keffe D\" Davis, l'ancien chef des South Side Compton Crips, a été reconnu coupable, lundi par un jury de Las Vegas, d'avoir orchestré le meurtre de Tupac Shakur il y a trente ans. La mort du célèbre rappeur californien était l'un des \"cold cases\" les plus célèbres des États-Unis.",
+      "url": "https://www.france24.com/fr/am%C3%A9riques/20260901-etats-unis-meurtre-du-rappeur-tupac-shakur-duane-davis-ex-membre-de-gang-reconnu-coupable"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "L'Union européenne va suspendre ses importations de viande du Brésil",
+      "summary": "L'Union européenne va suspendre à partir de jeudi ses importations de volaille et de bœuf brésiliens, ainsi que d'œufs et de miel, faute de garanties suffisantes de Brasília sur le respect des règles sanitaires européennes contre l'usage abusif d'antibiotiques dans l'élevage.",
+      "url": "https://www.france24.com/fr/%C3%A9co-tech/20260901-union-europeenne-va-suspendre-importations-viande-bresil-sante-regles-sanitaires-antibiotiques-antimicrobiens"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Uniforme à l’école: en France, la fin discrète d’une expérimentation qui n’a pas convaincu",
+      "summary": "L'expérimentation de la tenue scolaire commune ne sera pas reconduite à la rentrée 2026. Lancé en 2024, le dispositif devait notamment renforcer la cohésion entre élèves et améliorer le climat scolaire. Deux ans plus tard, le bilan officiel est contrasté : les élèves interrogés par des chercheurs rejettent massivement le principe et les collectivités ne disposent plus du même soutien financier de l'État.",
+      "url": "https://www.rfi.fr/fr/france/20260901-uniforme-%C3%A0-l-%C3%A9cole-en-france-la-fin-discr%C3%A8te-d-une-exp%C3%A9rimentation-qui-n-a-pas-convaincu"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Crue dans l'Himalaya: plus de 1 000 morts et des secours qui peinent à atteindre les sinistrés",
+      "summary": "Au Népal, les autorités népalaises font désormais état de plus de 1 000 morts et plus de 4 400 disparus, six jours après la crue dévastatrice. La destruction de la plupart des ponts et la pluie complique l'arrivée des secours. Pendant ce temps, les autorités tardent à demander des renforts à l'étranger, seule une poignée d'experts asiatiques a pu se joindre aux recherches.",
+      "url": "https://www.rfi.fr/fr/asie-pacifique/20260901-crue-dans-l-himalaya-au-n%C3%A9pal-pol%C3%A9mique-autour-de-l-acheminement-de-l-aide-humanitaire"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Sommet de l’OCS: à Bichkek, l’Iran à la recherche du soutien russe face aux États-Unis",
+      "summary": "À Bichkek, au Kirghizistan, de nombreux chefs d’État – de la Russie à la Chine en passant par l’Iran, l’Inde ou encore le Pakistan – sont arrivés lundi 31 août, à la veille du 25e sommet de l’Organisation de coopération de Shanghai. L’objectif est de renforcer l’idée d’un monde multipolaire et contrer l’hégémonie américaine. Mais avant même l’ouverture officielle, des rencontres bilatérales, certaines d’importance stratégique, ont déjà eu lieu.",
+      "url": "https://www.rfi.fr/fr/asie-pacifique/20260901-sommet-de-l-ocs-recherche-soutien-russe-pour-contrer-hegemonie-americaine"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "États-Unis: un ancien membre de gang reconnu coupable du meurtre du rappeur Tupac Shakur",
+      "summary": "Aux États-Unis, Duane Davis, dit « Keefe D », ancien membre des South Side Compton Crips, un gang de Los Angeles, a été reconnu coupable lundi 31 août du meurtre du rappeur américain Tupac Shakur en 1996. Trente ans après les faits, le jury d’un tribunal de Las Vegas a rendu son verdict après seulement quelques heures de délibérations, dans l’un des « cold cases » les plus célèbres de l’histoire du pays.",
+      "url": "https://www.rfi.fr/fr/am%C3%A9riques/20260901-%C3%A9tats-unis-un-ancien-membre-de-gang-reconnu-coupable-du-meurtre-du-rappeur-tupac-shakur"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "«L'IA est déjà à l'école, il faut faire avec et comprendre ses risques», estime Anne Bouverot",
+      "summary": "Anne Bouverot, co-présidente du Conseil de l'intelligence artificielle et du numérique et présidente du conseil d'administration de l'École normale supérieure, est l'invitée de RFI ce 1er septembre. En ces jours de rentrée scolaire, réflexions autour de l'usage de l'intelligence artificielle à l'école. Le CIANum préconise des temps avec et sans IA.",
+      "url": "https://www.rfi.fr/fr/podcasts/le-grand-invit%C3%A9-international/20260901-l-ia-est-d%C3%A9j%C3%A0-%C3%A0-l-%C3%A9cole-il-faut-faire-avec-et-comprendre-ses-risques-estime-anne-bouverot"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "RDC: une rentrée scolaire à l’épreuve d’Ebola, de la grève et de la guerre",
+      "summary": "Des millions d’élèves congolais sont appelés à reprendre le chemin de l’école ce mardi 1er septembre. Le gouvernement maintient la rentrée sur l’ensemble du territoire, mais les conditions seront très différentes selon les régions. Six provinces sont touchées par Ebola, le Syndicat des enseignants du Congo (Syeco) appelle les enseignants à ne pas reprendre les cours et, dans les territoires contrôlés par l’AFC/M23, les autorités du mouvement préparent elles aussi la rentrée alors que Kinshasa continue de rémunérer les enseignants du primaire et du secondaire.",
+      "url": "https://www.rfi.fr/fr/afrique/20260901-rdc-une-rentr%C3%A9e-scolaire-%C3%A0-l-%C3%A9preuve-d-ebola-de-la-gr%C3%A8ve-et-de-la-guerre"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Niger: après la mutinerie à Niamey, les raisons de la colère dans les rangs de l’armée",
+      "summary": "Au Niger, journée calme ce lundi 31 août à Niamey, après un week-end marqué par des tirs. Ils ont commencé dans la nuit de vendredi à samedi et se sont poursuivis dans la journée de samedi. De violents affrontements ont opposé des soldats mutins, d’un côté, à la garde présidentielle, appuyée par les forces russes de l’Africa Corps, de l’autre. Depuis, aucun bilan officiel n’a été communiqué. Le général Abdourahamane Tiani, à la tête du CNSP, ne s’est pas exprimé publiquement. Les autorités parlent d’un « mouvement d’humeur ». Beaucoup de zones d’ombre persistent, notamment sur les raisons qui ont conduit à ces événements.",
+      "url": "https://www.rfi.fr/fr/afrique/20260901-niger-apr%C3%A8s-la-mutinerie-%C3%A0-niamey-les-raisons-de-la-col%C3%A8re-dans-les-rangs-de-l-arm%C3%A9e"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Les capacités militaires américaines dans un état critique, selon le «Washington Post»",
+      "summary": "Donald Trump a affirmé, lundi 31 août à Fox News, que l'armée américaine allait « répondre » aux attaques de missiles de l'Iran contre des cibles américaines au Moyen-Orient, les deux pays ayant repris leurs frappes après un mois d'accalmie. Pourtant, selon le Washington Post, un rapport classifié de l'administration américaine indique qu'un prolongement du conflit avec l'Iran risquerait de fragiliser la défense américaine. Le Pentagone aurait fait part de ses inquiétudes.",
+      "url": "https://www.rfi.fr/fr/am%C3%A9riques/20260901-les-capacit%C3%A9s-militaires-am%C3%A9ricaines-dans-un-%C3%A9tat-critique-selon-le-washington-post"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "La Grèce s'équipe en systèmes anti-aériens made in Israël",
+      "summary": "Trois milliards d'euros. C'est le montant des équipements de défense anti-aérienne achetés par la Grèce à des entreprises israéliennes. Athènes concrétise ainsi son programme baptisé « Bouclier d'Achille ». Le contrat a été signé lundi 31 août entre deux pays qui ont en commun leurs mauvaises relations avec la Turquie.",
+      "url": "https://www.rfi.fr/fr/europe/20260901-la-gr%C3%A8ce-s-%C3%A9quipe-en-syst%C3%A8mes-anti-a%C3%A9riens-made-in-isra%C3%ABl"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "RDC: le FCC «campe sur ces exigences» et «exige des mesures de décrispation politique» de Felix Tshisekedi",
+      "summary": "« Un dialogue national oui, mais avec tout le monde et à l'extérieur de la RDC ». Voilà en substance la position du Front commun pour le Congo (FCC) de l'ancien président Joseph Kabila, qui vit en exil depuis qu'il a été condamné à mort pour trahison à Kinshasa il y a un an. Jeudi dernier, dans une adresse à la nation, le président Tshisekedi a proposé un dialogue national ouvert à l'opposition, mais à l'exclusion des rebelles du M23 et de « ceux qui agissent au service du Rwanda ». De passage à Paris, Marie-Ange Mushobekwa, porte-parole du FCC, est l'invitée de RFI.",
+      "url": "https://www.rfi.fr/fr/podcasts/le-grand-invit%C3%A9-afrique/20260901-rdc-le-fcc-campe-sur-ces-exigences-et-exige-des-mesures-de-d%C3%A9crispation-politique-de-felix-tshisekedi"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Rentrée : ces collèges où les élèves de 6e ont le meilleur niveau en maths et en français",
+      "summary": "PALMARÈS EXCLUSIF - Les résultats des évaluations menées à l’entrée au collège révèlent des écarts de niveaux importants entre les établissements. Où se situe celui de votre enfant ? Découvrez notre palmarès.",
+      "url": "https://www.lefigaro.fr/actualite-france/rentree-ces-colleges-ou-les-eleves-de-6e-ont-le-meilleur-niveau-en-maths-et-en-francais-20260901"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Rentrée scolaire : à Lyon, des brasseurs d’air dans les classes mais pas de climatisation",
+      "summary": "Au terme d’un été caniculaire, les élèves lyonnais s’apprêtent à reprendre le chemin d’écoles encore peu adaptées aux chaleurs extrêmes.",
+      "url": "https://www.lefigaro.fr/lyon/rentree-scolaire-a-lyon-des-brasseurs-d-air-dans-les-classes-mais-pas-de-climatisation-20260901"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Les secrets de la réussite de ce lycée niçois réservé aux enfants HPI",
+      "summary": "Depuis la fin des années 1980, l’établissement Michelet s’adresse en priorité aux élèves surdoués en proposant un enseignement adapté à leurs spécificités.",
+      "url": "https://www.lefigaro.fr/nice/les-secrets-de-la-reussite-de-ce-lycee-nicois-reserve-aux-surdoues-20260708"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "À Paris, le déclin démographique va continuer de frapper l’école de plein fouet",
+      "summary": "DÉCRYPTAGE - Alors que l’on dénombre déjà 30.000 élèves de moins qu’il y a dix ans, cette baisse va s’amplifier dans les prochaines années.",
+      "url": "https://www.lefigaro.fr/actualite-france/a-paris-le-declin-demographique-va-continuer-de-frapper-l-ecole-de-plein-fouet-20260831"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "EN DIRECT - Rentrée scolaire 2026 : «Tout le monde va l’utiliser en cachette», les lycéens sceptiques face à l’interdiction des portables",
+      "summary": "C’est la rentrée pour près de 12 millions de jeunes Français ce mardi 1er septembre. Retrouvez sur ce direct le déroulé de cette matinée, des témoignages d’élèves et d’enseignants et les nouveautés prévues dans les établissements scolaires.",
+      "url": "https://etudiant.lefigaro.fr/article/college/en-direct-rentree-2026-pres-de-12-millions-d-eleves-reprennent-le-chemin-de-l-ecole-ce-mardi-20260901/"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Interdiction du portable, questionnaire sur les violences sexuelles, cours de finances : les nouveautés de la rentrée 2026",
+      "summary": "Après les collégiens, les lycéens devront se passer de leur téléphone portable au lycée dès la rentrée.",
+      "url": "https://etudiant.lefigaro.fr/article/lycee/rentree-scolaire-2026-interdiction-du-portable-au-lycee-questionnaire-sur-les-violences-sexuelles-les-nouveautes-attendues-dans-les-etablissements-20260831/"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "L’IA empêche-t-elle vos enfants d’apprendre correctement ?",
+      "summary": "FIG DATA - Une étude menée sur près de 27 000 élèves du secondaire chinois mesure pour la première fois à grande échelle les effets de l’IA générative sur l’apprentissage. Avec des résultats pour le moins inquiétants.",
+      "url": "https://www.lefigaro.fr/actualite-france/l-ia-empeche-t-il-vos-enfants-d-apprendre-correctement-20260901"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "« L’École émancipe, les réseaux sociaux conditionnent » : l’interdiction du portable au lycée, un premier pas pour limiter l’emprise numérique",
+      "summary": "ANALYSE - En ce jour de rentrée, les élèves devront se séparer de leur téléphone avant d’entrer en classe. Mais la mesure d’interdiction des réseaux sociaux aux moins de 15 ans n’a, elle, pas abouti pour l’heure.",
+      "url": "https://www.lefigaro.fr/actualite-france/l-ecole-emancipe-les-reseaux-sociaux-conditionnent-l-interdiction-du-portable-au-lycee-un-premier-pas-pour-limiter-l-emprise-numerique-20260901"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "«Un moment aussi symbolique qu’indispensable» : Velvet, futur concurrent de la SNCF, décroche sa licence ferroviaire",
+      "summary": "INFO LE FIGARO - La compagnie, qui veut faire rouler des trains à grande vitesse entre Paris et Bordeaux, Nantes et Rennes, est bien partie pour tenir son objectif de mise en service commerciale à l’été 2028.",
+      "url": "https://www.lefigaro.fr/societes/un-moment-aussi-symbolique-qu-indispensable-velvet-futur-concurrent-de-la-sncf-decroche-sa-licence-ferroviaire-20260901"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Guerre au Moyen-Orient : Donald Trump menace de bombarder «fort» l'Iran après de premiers échanges de frappes en un mois",
+      "summary": "Pour la première fois depuis fin juillet, les forces américaines ont annoncé des bombardements contre «deux lanceurs iraniens (de roquettes) sur l’île de Larak», située dans le stratégique détroit d’Ormuz.",
+      "url": "https://www.lefigaro.fr/flash-actu/guerre-au-moyen-orient-donald-trump-menace-de-bombarder-fort-l-iran-apres-de-premiers-echanges-de-frappes-en-un-mois-20260901"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Guerre au Moyen-Orient : l’Iran promet de renouer «immédiatement» avec ses engagements si Washington revient à l'accord de juin",
+      "summary": "Pour la première fois depuis cinq semaines, les États-Unis ont bombardé l’Iran. Donald Trump mise sur une stratégie d’asphyxie économique pour affaiblir le régime iranien.",
+      "url": "https://www.lefigaro.fr/international/guerre-au-moyen-orient-l-iran-promet-de-renouer-immediatement-avec-ses-engagements-si-washington-revient-a-l-accord-de-juin-20260901"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Ruptures conventionnelles, arrêts maladie, retraites… Ce qui change en septembre 2026",
+      "summary": "La rentrée 2026 apporte son lot de nouvelles règles pour les Français. Plusieurs changements vont concerner directement le quotidien des ménages. Le Figaro fait le point sur les principales nouveautés.",
+      "url": "https://www.lefigaro.fr/conjoncture/ruptures-conventionnelles-arrets-maladie-retraites-ce-qui-change-en-septembre-2026-20260827"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "«J’essaie de garder toute mon énergie pour donner le meilleur» : Céline Dion se confie à la sortie de son hôtel parisien",
+      "summary": "Lundi 31 août, alors qu’elle regagnait le Royal Monceau, la chanteuse a dit à ses fans qu’elle veut préserver ses forces pour ses spectacles.",
+      "url": "https://www.lefigaro.fr/musique/j-essaie-de-garder-toute-mon-energie-pour-donner-le-meilleur-celine-dion-se-confie-a-la-sortie-de-son-hotel-parisien-20260901"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "«Il faut vous habituer à ce moment où Louis Bielle-Biarrey va basculer à l’ouverture…», l’UBB a un plan pour son ailier supersonique",
+      "summary": "À l’aile, LBB affole les compteurs sous le maillot de l’UBB (et du XV de France). Mais son manager, Yannick Bru, compte désormais également sur lui en numéro 10. Explications.",
+      "url": "https://www.lefigaro.fr/sports/rugby/top-14/il-faut-vous-habituer-a-ce-moment-ou-louis-bielle-biarrey-va-basculer-a-l-ouverture-yannick-bru-a-un-plan-pour-son-ailier-supersonique-20260901"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "États-Unis : le secrétaire américain à l'Armée de terre, Dan Driscoll, a remis sa démission",
+      "summary": "La Maison-Blanche n’a pas démenti l’information. Dan Driscoll était notamment impliqué dans les négociations de paix entre la Russie et l’Ukraine.",
+      "url": "https://www.lefigaro.fr/international/etats-unis-le-secretaire-americain-a-l-armee-de-terre-dan-driscoll-a-remis-sa-demission-20260901"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Un Tchétchène impliqué dans l'assassinat de Samuel Paty condamné après avoir été interpellé au Parc Astérix",
+      "summary": "Azim Epsirkhanov, condamné pour avoir fourni le couteau à l’assassin de Samuel Paty en mars dernier, a de nouveau été condamné à un an de prison lundi pour avoir violé son assignation à résidence.",
+      "url": "https://www.lefigaro.fr/flash-actu/un-tchetchene-implique-dans-l-assassinat-de-samuel-paty-de-nouveau-condamne-20260831"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Des taux à 4 % sur 20 ans : faut-il craindre un nouveau coup d’arrêt pour l’immobilier ?",
+      "summary": "DÉCRYPTAGE - En septembre, tous les barèmes des banques témoignent du renchérissement des coûts d’emprunt et donc de celui de l’achat d’un logement. De quoi inquiéter les professionnels.",
+      "url": "https://www.lefigaro.fr/economie/des-taux-a-4-sur-20-ans-faut-il-craindre-un-nouveau-coup-d-arret-pour-l-immobilier-20260901"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-09-01",
+      "title": "Un ancien membre de gang reconnu coupable du meurtre de la légende du rap Tupac Shakur trente ans après les faits",
+      "summary": "Duane Davis, ex-figure des South Side Compton Crips, gang d’un quartier sensible de Los Angeles, était jugée pour avoir commandité le meurtre et fourni l’arme du crime. Le prononcé de la peine aura lieu le 13 octobre prochain.",
+      "url": "https://www.lefigaro.fr/culture/un-ancien-membre-de-gang-reconnu-coupable-du-meurtre-de-la-legende-du-rap-tupac-shakur-trente-ans-apres-les-faits-20260901"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "L'Organisation de coopération de Shanghai : club uni ou divisé ?",
+      "summary": "C’est au Kirghizistan que l’Organisation de coopération de Shanghai tient son sommet ce lundi pendant deux jours. Au menu notamment, l’Inde, la Chine, la Russie doivent s’entretenir avec le président iranien afin de discuter d’un soutien suite aux nouvelles sanctions économiques de Washington et au lendemain de nouveaux bombardements. L'occasion de revenir sur les origines et le rôle de l'OCS.",
+      "url": "https://www.france24.com/fr/%C3%A9missions/les-cl%C3%A9s-de-l-info/20260831-l-organisation-de-coop%C3%A9ration-de-shanghai-club-uni-ou-divis%C3%A9"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Retour au calme à Niamey, l'Algérie envoie quatre avions au Niger",
+      "summary": "C'est le retour au calme à Niamey. La capitale du Niger a été secouée samedi par une mutinerie déjouée par le régime militaire avec l'appui de son partenaire russe. L'Algérie a envoyé dimanche, dans le cadre de la reprise récente de la coopération avec son voisin, quatre avions de chasse et deux autres avions militaires. Que faut-il comprendre par l'envoi de ces avions? Quels sont les enjeux pour l'Algérie? L'analyse de notre invité invité Akram Kharief, journaliste et directeur de Ménadefense.",
+      "url": "https://www.france24.com/fr/%C3%A9missions/journal-de-l-afrique/20260831-retour-au-calme-%C3%A0-niamey-l-alg%C3%A9rie-envoie-quatre-avions-au-niger"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Pour la troisième fois, la française Sophie Adenot sort dans l'espace avec une équipe 100 % féminine",
+      "summary": "À bord de l'ISS, l'ingénieure et ancienne pilote d'essai, Sophie Adenot, âgée de 44 ans, va effectuer sa troisième sortie dans l'espace en moins de deux semaines. Avant elle, seuls quatre Français avaient effectué des sorties extravéhiculaires dans le vide spatial, le dernier en date étant Thomas Pesquet.",
+      "url": "https://www.france24.com/fr/%C3%A9co-tech/20260831-pour-la-troisi%C3%A8me-fois-la-fran%C3%A7aise-sophie-adenot-sort-dans-l-espace-avec-une-%C3%A9quipe-100-f%C3%A9minine"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Désastre au Népal : les intox inondent les réseaux sociaux",
+      "summary": "5 jours après la crue dévastatrice qui a déferlé sur le Népal, des images de la catastrophe continuent de se répandre sur les réseaux sociaux. Beaucoup sont générées par l'intelligence artificielle, d'autres présentent des vidéos décontextualisées. Pourquoi certains internautes surenchérissent, alors que les images réelles sont déjà très impressionnantes ? Explications avec Jules BOITEAU dans Info Intox.",
+      "url": "https://www.france24.com/fr/%C3%A9missions/info-ou-intox/20260831-d%C3%A9sastre-au-n%C3%A9pal-les-intox-inondent-les-r%C3%A9seaux-sociaux"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "🔴 L'ancien Premier ministre Édouard Balladur est mort à l'âge de 97 ans",
+      "summary": "",
+      "url": "https://www.france24.com/fr/france/20260831-france-ancien-premier-ministre-edouard-balladur-est-decede-a-97-ans"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Mort de l'ancien Premier ministre Édouard Balladur à 97 ans",
+      "summary": "Édouard Balladur, Premier ministre entre 1993 et 1995, est mort lundi à 97 ans. Ancien proche de Jacques Chirac, il était devenu son rival lors de la campagne présidentielle de 1995. Son échec au premier tour avait mis fin à ses ambitions nationales.",
+      "url": "https://www.france24.com/fr/france/20260831-france-ancien-premier-ministre-edouard-balladur-est-decede-a-97-ans"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Crise au Népal : onde de choc régionale ?",
+      "summary": "Au Népal, le bilan des victimes est revu à la hausse chaque jour. Des identifications sont toujours en cours. \"Une catastrophe naturelle déchirante\", a jugé le Premier Ministre du Népal Balendra Shah. Plusieurs questions ce soir dans le débat : Comment le Népal gère-t-il les secours ? Quel rôle jouent l'Inde et la Chine ? Quid des Etats-Unis et de l'Europe ? La catastrophe climatique d'aujourd'hui peut-elle dégénérer en une catastrophe humanitaire ? Doit-on s'attendre à une déstabilisation de la région ?",
+      "url": "https://www.france24.com/fr/%C3%A9missions/le-d%C3%A9bat/20260831-crise-au-n%C3%A9pal-onde-de-choc-r%C3%A9gionale"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Niger : le calme revient à Niamey après la mutinerie",
+      "summary": "🇳🇪 Au Niger, le calme est de retour à Niamey, après une nuit de vendredi à samedi marquée par une mutinerie déjouée par le régime militaire. Avec l’appui de ses alliés russes, les paramilitaires d’Africa Corps ont effectué une tournée dans la capitale. Retour en images avec Gaëlle Fonseca.",
+      "url": "https://www.france24.com/fr/vid%C3%A9o/20260831-niger-le-calme-revient-%C3%A0-niamey-apr%C3%A8s-la-mutinerie"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "RD Congo : l'opposition rejette les consultations annoncées par Tshisekedi",
+      "summary": "🇨🇩 En RDC, le projet de dialogue national de Félix Tshisekedi divise déjà. L’opposition, réunie au sein de la coalition C64 et les partisans de Joseph Kabila, rejette les consultations annoncées. La majorité présidentielle, elle, défend le processus.",
+      "url": "https://www.france24.com/fr/vid%C3%A9o/20260831-rd-congo-l-opposition-rejette-les-consultations-annonc%C3%A9es-par-tshisekedi"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Cameroun : Les migrants expulsés des États-Unis dénoncent leurs conditions",
+      "summary": "🇨🇲 🇺🇸 Le Cameroun fait partie des pays qui auraient conclu un accord secret avec les États-Unis pour accueillir des personnes expulsées. Alors que ces personnes vivent souvent dans des conditions précaires et risquent de subir des persécutions similaires à celles de leur pays d’origine.",
+      "url": "https://www.france24.com/fr/vid%C3%A9o/20260831-cameroun-les-migrants-expuls%C3%A9s-des-%C3%A9tats-unis-d%C3%A9noncent-leurs-conditions"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Crue dans le Grand Canyon: le rôle du changement climatique",
+      "summary": "Une crue soudaine dans le Grand Canyon a fait au moins 1 mort et 15 disparus. La rivière qui coule dans la Bright Angel Creek a vu son débit multiplié par 20 en un temps très court. Sur le sol aride, donc imperméable, de la zone et à la faveur de pentes très raides, un mur d'eau a fondu sur les randonneurs. Le changement climatique joue un rôle dans l'amplification des averses. Et la rapidité de ces modifications du système climatique rend plus difficile la prévision de ces événements extrêmes.",
+      "url": "https://www.france24.com/fr/%C3%A9missions/%C3%A9l%C3%A9ment-terre-la-quotidienne/20260831-crue-dans-le-grand-canyon-le-r%C3%B4le-du-changement-climatique"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Venezuela : Alejandro Betancourt, le sulfureux magnat du pétrole sur lequel Trump veut miser",
+      "summary": "En annonçant vendredi avoir conclu un accord avec le Venezuela pour obtenir “65 milliards de barils” de pétrole, Donald Trump avait précisé que Washington travaillerait avec un intermédiaire. Il s’agit d’Alejandro Betancourt, un homme d’affaires controversé qui a fait fortune grâce au chavisme.",
+      "url": "https://www.france24.com/fr/am%C3%A9riques/20260831-venezuela-alejandro-betancourt-le-sulfureux-magnat-du-p%C3%A9trole-sur-lequel-trump-veut-miser"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Massachusetts : une nouvelle loi autorise-t-elle l’avortement \"jusqu’à l’accouchement\" ?",
+      "summary": "Depuis l’adoption d’une nouvelle loi sur l’avortement au Massachusetts, plusieurs publications virales sur les réseaux sociaux affirment que l’État autoriserait désormais les interruptions de grossesse jusqu’au jour de la naissance. Qu’en est-il vraiment ?",
+      "url": "https://www.france24.com/fr/am%C3%A9riques/20260831-massachusetts-nouvelle-loi-autorise-avortement-accouchement-intox"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "The Cure, Interpol, et interdiction de fumer : les temps forts de Rock en Seine",
+      "summary": "Sur les cinq jours du festival de Rock en Seine, 175 000 personnes ont répondu présentes malgré les aléas de la météo. Le dernier festival de musique de l'été a fait le plein aux portes de Paris. Retour sur les meilleurs moments.",
+      "url": "https://www.france24.com/fr/%C3%A9missions/%C3%A0-l-affiche/20260831-the-cure-interpol-et-interdiction-de-fumer-les-temps-forts-de-rock-en-seine"
+    },
+    {
+      "source": "France 24",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "🔴 Lionel Messi annonce qu'il ne jouera plus avec l'Argentine",
+      "summary": "",
+      "url": "https://www.france24.com/fr/sports/20260831-argentine-football-lionel-messi-annonce-retraite-internationale-equipe-nationale"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "L'accord annoncé par Donald Trump, un «hold-up» sur le pétrole vénézuélien",
+      "summary": "De nombreuses interrogations persistent sur le contenu et la mise en œuvre de l'accord annoncé triomphalement vendredi 28 août par le président états-unien Donald Trump sur une part importante des réserves pétrolières du Venezuela. « Hold-up », tutelle politique, constitutionnalité, deux chercheurs analysent pour RFI la portée de cet accord.",
+      "url": "https://www.rfi.fr/fr/am%C3%A9riques/20260831-l-accord-annonc%C3%A9-par-donald-trump-un-hold-up-sur-le-p%C3%A9trole-v%C3%A9n%C3%A9zu%C3%A9lien"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "France: l'ancien Premier ministre Édouard Balladur est mort",
+      "summary": "L’ex-Premier ministre français (1993-1995) s’est éteint ce 31 août 2026 à l’âge de 97 ans. Sa carrière a débuté en 1964, lorsqu'il devient le collaborateur de Georges Pompidou, alors chef du gouvernement. Elle s'achève à la fin des années 2000, lorsqu'il se retire peu à peu de la vie politique. Ce que laisse Édouard Balladur, c'est d'abord le souvenir d'un chef de gouvernement.",
+      "url": "https://www.rfi.fr/fr/france/20260831-france-l-ancien-premier-ministre-%C3%A9douard-balladur-est-mort"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Mort d'Édouard Balladur: la classe politique française rend hommage à l'ancien Premier ministre",
+      "summary": "« Un serviteur exigeant » pour la France, « un grand homme d'État », « une référence » : les réactions se multiplient depuis l'annonce de la mort de l'ancien Premier ministre Édouard Balladur ce 31 août.",
+      "url": "https://www.rfi.fr/fr/france/20260831-mort-d-%C3%A9douard-balladur-la-classe-politique-fran%C3%A7aise-rend-hommage-%C3%A0-l-ancien-premier-ministre"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Rentrée scolaire: le salaire des enseignants en France au cœur des débats",
+      "summary": "Les enseignants français estiment qu’ils sont globalement mal payés pour le travail qu'ils effectuent. Les syndicats expliquent qu'ils ont perdu entre 15 et 25 % de pouvoir d'achat en 20 ans. Ils sont mal rémunérés par rapport aux autres fonctionnaires de la même catégorie puisque les professeurs perçoivent 900 euros de moins par mois. Une rémunération en deçà de nombres de leurs collègues européens.",
+      "url": "https://www.rfi.fr/fr/france/20260831-rentr%C3%A9e-scolaire-le-salaire-des-enseignants-en-france-au-c%C5%93ur-des-d%C3%A9bats"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Rentrée scolaire: la charge mentale des femmes [2/5]",
+      "summary": "En France métropolitaine, c’est la rentrée scolaire ce mardi 1er septembre pour plus de 11 millions d'élèves. Une période qui rime, pour beaucoup de mères de famille, avec explosion de la charge mentale. C'est-à-dire tout le travail de préparation, de planification et d'anticipation des tâches domestiques. Dans ce cas précis, des tâches relatives à la rentrée des classes. Achat de fournitures scolaires, de vêtements ainsi que les démarches administratives pour l’inscription à la cantine ou aux activités extra-scolaires de leurs enfants par exemple, tout repose quasiment sur les épaules des mères.",
+      "url": "https://www.rfi.fr/fr/podcasts/reportage-france/20260831-rentr%C3%A9e-scolaire-la-charge-mentale-des-femmes-2-5"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Un comité de l'ONU recommande aux États de fournir des réparations pour l’esclavage",
+      "summary": "Le Comité de l'ONU pour l'élimination de la discrimination raciale (Cerd) a publié, ce lundi 31 août, une recommandation, incitant les États à fournir des réparations généralisées pour compenser les préjudices engendrés par la traite transatlantique des Africains, réduits en esclavage. Ce document, approuvé la semaine dernière, pourrait servir de base pour les demandes de réparations.",
+      "url": "https://www.rfi.fr/fr/afrique/20260831-un-comit%C3%A9-de-l-onu-recommande-aux-%C3%A9tats-de-fournir-des-r%C3%A9parations-pour-l-esclavage"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Allemagne: les milieux d'affaires et le parti d'extrême-droite AfD en Saxe-Anhalt, entre soutien et hostilité",
+      "summary": "C'est une élection régionale extrêmement attendue qui se tient en Allemagne dimanche prochain. Pour la première fois depuis la guerre, l'extrême droite pourrait prendre le contrôle d'un Land, celui de Saxe-Anhalt dans l'Est du pays. L'AfD est créditée dans les sondages d'environ 40 % des voix et frôle la majorité en sièges au parlement régional. Quelles conséquences aurait une telle victoire pour l'économie et que pensent les milieux d'affaires d'un gouvernement AfD ?",
+      "url": "https://www.rfi.fr/fr/podcasts/reportage-international/20260831-allemagne-les-milieux-d-affaires-et-le-parti-d-extr%C3%AAme-droite-afd-en-saxe-anhalt-entre-soutien-et-hostilit%C3%A9"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Détenus par Israël, morts sous les décombres… Les familles de disparus gazaouis dans l'incertitude",
+      "summary": "Selon les estimations du Comité international de la Croix-Rouge, plusieurs milliers de personnes sont portées disparues à Gaza. Elles sont probablement décédées ou détenues par Israël. Des milliers de familles vivent donc dans une situation d’incertitude totale. Elles ne savent pas si leur proche est en vie ou non. Rencontre avec la famille d’Essam Hammad, disparu durant l’été 2025.",
+      "url": "https://www.rfi.fr/fr/moyen-orient/20260831-d%C3%A9tenus-par-isra%C3%ABl-morts-sous-les-d%C3%A9combres-les-familles-de-disparus-gazaouis-dans-l-incertitude"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Baisse démographique : un défi pour l’école de demain ?",
+      "summary": "C’est veille de rentrée scolaire dans de nombreux pays du monde. Ce mardi en France ils seront 11,6 millions à reprendre le chemin de l’école. C’est moins qu’il y a un an, et cette baisse devrait s’accélérer dans les prochaines années. D’ici 2035 la France devrait perdre 1,7 millions d’élèves. Des perspectives qualifiées de « vague sismique » par le ministre de l’Education nationale. Quelles problématiques la chute du nombre de naissances soulève-t-elle ? Faut-il craindre un accroissement des inégalités ? Comment transformer ces projections en aubaine ?",
+      "url": "https://www.rfi.fr/fr/podcasts/d%C3%A9bat-du-jour/20260831-baisse-d%C3%A9mographique-un-d%C3%A9fi-pour-l-%C3%A9cole-de-demain"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "La McAnuff Family, sur scène avec les Ligerians, font du reggae une histoire de famille",
+      "summary": "Depuis plus de 50 ans, sa voix porte inlassablement les valeurs du reggae : le chanteur jamaïcain Winston McAnuff et ses enfants, Nadia et Kush, forment tous ensemble la McAnuff Family. Accompagnés du groupe français de reggae les Ligerians, ils sillonnent les scènes de France depuis cet été. Une façon de faire le pont entre les différentes générations et les différentes écoles du reggae… une façon, aussi, de montrer que 45 ans après la mort de Bob Marley, ce style musical né en Jamaïque n'a pas dit son dernier mot. Léa Boutin-Rivière a pu rencontrer la McAnuff Family lors du festival No Logo BZH, cet été.",
+      "url": "https://www.rfi.fr/fr/podcasts/invit%C3%A9-culture/20260831-la-mcanuff-family-sur-sc%C3%A8ne-avec-les-ligerians-font-du-reggae-une-histoire-de-famille"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "YouTube: clap de fin pour les «vlogs d'août» de Lena Situations, format culte des réseaux sociaux",
+      "summary": "Avec près de 10 millions d'abonnés toutes plateformes confondues, Lena Situations s'est fait connaître avec les vlogs d'août, ces vidéos quotidiennes postées pendant les vacances d'été. Et bien, elle y met fin : le dernier épisode de ce format taillé pour les réseaux sociaux qui a fait son succès pendant 10 ans sera publié mardi 1er septembre. Lena Mahfouf fête ce 31 août, en grande pompe, la fin d'une ère avec un spectacle à l'Accor Arena de Paris.",
+      "url": "https://www.rfi.fr/fr/culture/20260831-youtube-clap-de-fin-pour-les-vlogs-d-ao%C3%BBt-lena-situation-format-culte-des-r%C3%A9seaux-sociaux"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Sénégal: une start-up rend accessible l'intelligence artificielle aux locuteurs du wolof et du pulaar",
+      "summary": "Et si demain vous pouviez dialoguer avec une intelligence artificielle en wolof ou en pulaar ? C’est le pari de deux jeunes entrepreneurs sénégalais qui ont développé Awa, un assistant conversationnel capable de comprendre et de répondre dans ces langues africaines. Une innovation qui ambitionne de rendre les outils d’intelligence artificielle plus accessibles aux locuteurs des langues locales. Habib Diao nous fait visiter leur société Andakia avant le lancement officiel de l’outil. Reportage.",
+      "url": "https://www.rfi.fr/fr/podcasts/reportage-afrique/20260831-s%C3%A9n%C3%A9gal-une-start-up-rend-accessible-l-intelligence-artificielle-aux-locuteurs-du-wolof-et-du-pulaar"
+    },
+    {
+      "source": "RFI",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Présidentielle en France: le RN revient à ses fondamentaux en proposant à nouveau l'interdiction du voile",
+      "summary": "Comme depuis 2012, Marine Le Pen proposera d'interdire le port du voile islamique dans l'espace public, de le sanctionner « d'une amende », selon son lieutenant, Jean-Philippe Tanguy. En faisant cette proposition choc, le parti d'extrême droite sait ce qu'il fait.",
+      "url": "https://www.rfi.fr/fr/france/20260831-pr%C3%A9sidentielle-en-france-le-rn-revient-%C3%A0-ses-fondamentaux-en-proposant-%C3%A0-nouveau-l-interdiction-du-voile"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Les États-Unis face aux limites du blocus économique imposé à l’Iran",
+      "summary": "ANALYSE - Pour la première fois depuis cinq semaines, l’Amérique de Donald Trump a mené de nouveaux bombardements contre l’Iran. Mais son objectif reste d’asphyxier le régime par une forte pression.",
+      "url": "https://www.lefigaro.fr/international/les-etats-unis-face-aux-limites-du-blocus-economique-impose-a-l-iran-20260831"
+    },
+    {
+      "source": "Le Figaro",
+      "genre": "ニュース",
+      "date": "2026-08-31",
+      "title": "Retraite : quelles sont ces deux nouvelles mesures pour les mères qui entrent en vigueur au 1er septembre ?",
+      "summary": "À compter de ce mardi 1er septembre, deux changements importants en matière de bonifications de retraite liées aux enfants, votés dans le cadre du budget de la Sécurité sociale 2026, entrent en application.",
+      "url": "https://www.lefigaro.fr/social/retraite-quelles-sont-ces-deux-nouvelles-mesures-pour-les-meres-qui-entrent-en-vigueur-au-1er-septembre-20260831"
+    }
+  ]
+}
