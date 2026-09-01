@@ -1,0 +1,248 @@
+{
+  "metadata": {
+    "issue": "2026-W36",
+    "language": "es",
+    "country": "スペイン",
+    "publishDate": "2026-09-01",
+    "targetLanguage": "ja",
+    "id": "es-2026-W36-life-column",
+    "section": "life-column",
+    "kind": "blog",
+    "title": "El salón de Cristiano y el tuyo",
+    "titleJa": "クリスティアーノの居間と、あなたの居間",
+    "leadJa": "完璧な部屋の写真が無限に流れてくる時代に、私たちは自分の家を人に見せられなくなりました。エル・パイス紙の記事をきっかけに、スペインの家と「見せる」文化について書き下ろします。",
+    "category": "生活",
+    "level": "上級",
+    "trivia": "スペインでは家に人を招く文化が根強く、Mi casa es tu casa（私の家はあなたの家）が決まり文句。だからこそ「見せられる家かどうか」の圧力も強く働きます。"
+  },
+  "segments": [
+    {
+      "id": 1,
+      "original": "Antes, cuando alguien venía a casa, se recogía un poco el salón y ya está.",
+      "translation": "以前は、誰かが家に来るとなれば、居間を少し片づける、それで終わりだった。",
+      "words": [
+        {
+          "word": "recoger",
+          "surface": "recogía",
+          "meaning": "片づける",
+          "pos": "動詞"
+        },
+        {
+          "word": "salón",
+          "surface": "salón",
+          "meaning": "居間・リビング",
+          "pos": "名詞"
+        },
+        {
+          "word": "y ya está",
+          "surface": "y ya está",
+          "meaning": "それで終わり",
+          "pos": "決まり文句"
+        }
+      ],
+      "grammar": "se recogía は無人称の se。行為者をぼかして「片づけたものだ」という一般的な習慣を表し、線過去なので反復を示す。"
+    },
+    {
+      "id": 2,
+      "original": "Ahora, antes de abrir la puerta, uno mira su propia casa con los ojos de un algoritmo.",
+      "translation": "いまでは、ドアを開ける前に、人は自分の家をアルゴリズムの目で眺めてしまう。",
+      "words": [
+        {
+          "word": "propio",
+          "surface": "propia",
+          "meaning": "自分自身の",
+          "pos": "形容詞"
+        },
+        {
+          "word": "mirar con los ojos de",
+          "surface": "mira su propia casa con los ojos de",
+          "meaning": "〜の目で見る",
+          "pos": "動詞句"
+        }
+      ],
+      "grammar": "uno は「人は一般に」を表す不定の主語。話し手自身の経験を一般化して語るときによく使われる。"
+    },
+    {
+      "id": 3,
+      "original": "Las redes sociales nos han enseñado millones de interiores impolutos, y ninguno tiene cables a la vista.",
+      "translation": "SNSは私たちに、汚れひとつない室内を無数に見せてきた。そのどれにも配線は見えていない。",
+      "words": [
+        {
+          "word": "red social",
+          "surface": "redes sociales",
+          "meaning": "SNS",
+          "pos": "名詞"
+        },
+        {
+          "word": "enseñar",
+          "surface": "enseñado",
+          "meaning": "見せる・教える",
+          "pos": "動詞"
+        },
+        {
+          "word": "cable",
+          "surface": "cables",
+          "meaning": "コード・配線",
+          "pos": "名詞"
+        },
+        {
+          "word": "a la vista",
+          "surface": "a la vista",
+          "meaning": "見えるところに",
+          "pos": "副詞句"
+        }
+      ],
+      "grammar": "nos han enseñado の nos は間接目的語「私たちに」。スペイン語は目的格代名詞を動詞の前に置くのが原則。"
+    },
+    {
+      "id": 4,
+      "original": "En mi casa, en cambio, hay un cargador colgando de la pared desde hace cuatro años.",
+      "translation": "一方うちには、4年前から壁にぶら下がったままの充電器がある。",
+      "words": [
+        {
+          "word": "en cambio",
+          "surface": "en cambio",
+          "meaning": "その一方で",
+          "pos": "副詞句"
+        },
+        {
+          "word": "cargador",
+          "surface": "cargador",
+          "meaning": "充電器",
+          "pos": "名詞"
+        },
+        {
+          "word": "colgar",
+          "surface": "colgando",
+          "meaning": "ぶら下がる",
+          "pos": "動詞"
+        },
+        {
+          "word": "desde hace",
+          "surface": "desde hace",
+          "meaning": "〜前から",
+          "pos": "前置詞句"
+        }
+      ],
+      "grammar": "desde hace + 期間で「〜前から今まで」。hace だけなら「〜前に」なので、継続の意味を出すには desde が要る。"
+    },
+    {
+      "id": 5,
+      "original": "No es fealdad. Es una casa donde vive gente que trabaja y que a veces llega tarde y cena de pie.",
+      "translation": "それは醜さではない。働き、ときに遅く帰り、立ったまま夕食をとる人間が暮らしている家というだけだ。",
+      "words": [
+        {
+          "word": "fealdad",
+          "surface": "fealdad",
+          "meaning": "醜さ",
+          "pos": "名詞"
+        },
+        {
+          "word": "a veces",
+          "surface": "a veces",
+          "meaning": "ときどき",
+          "pos": "副詞句"
+        },
+        {
+          "word": "de pie",
+          "surface": "de pie",
+          "meaning": "立ったまま",
+          "pos": "副詞句"
+        }
+      ],
+      "grammar": "donde は場所を表す関係副詞。una casa donde vive gente で「人が暮らしている家」となり、en la que と言い換えられる。"
+    },
+    {
+      "id": 6,
+      "original": "Los expertos dicen que criticamos la casa del prójimo porque nos han convencido de que un hogar debe ser una foto.",
+      "translation": "専門家によれば、私たちが他人の家を批評してしまうのは、家とは一枚の写真であるべきだと思い込まされているからだ。",
+      "words": [
+        {
+          "word": "prójimo",
+          "surface": "prójimo",
+          "meaning": "隣人・他人",
+          "pos": "名詞"
+        },
+        {
+          "word": "convencer de",
+          "surface": "convencido de",
+          "meaning": "納得させる",
+          "pos": "動詞句"
+        },
+        {
+          "word": "hogar",
+          "surface": "hogar",
+          "meaning": "家庭・住まい",
+          "pos": "名詞"
+        }
+      ],
+      "grammar": "nos han convencido de que... は「私たちに〜だと思い込ませた」。convencer は前置詞 de を伴い、そのあとに que 節が来る。"
+    },
+    {
+      "id": 7,
+      "original": "Pero un hogar no se mira: se habita. Y lo que se habita se desordena.",
+      "translation": "だが住まいは眺めるものではない。住むものだ。そして住まわれるものは散らかる。",
+      "words": [
+        {
+          "word": "habitar",
+          "surface": "se habita",
+          "meaning": "住む",
+          "pos": "動詞"
+        },
+        {
+          "word": "desordenarse",
+          "surface": "se desordena",
+          "meaning": "散らかる",
+          "pos": "動詞"
+        }
+      ],
+      "grammar": "コロンを挟んで no se mira と se habita を対置し、最後に lo que se habita と受け直す。短い文を重ねた、スペイン語らしい修辞。"
+    },
+    {
+      "id": 8,
+      "original": "Quizá el gesto más radical que nos queda sea invitar a alguien sin haber recogido nada.",
+      "translation": "おそらく私たちに残された最も過激なふるまいは、何も片づけずに誰かを招くことだろう。",
+      "words": [
+        {
+          "word": "quizá",
+          "surface": "Quizá",
+          "meaning": "おそらく",
+          "pos": "副詞"
+        },
+        {
+          "word": "gesto",
+          "surface": "gesto",
+          "meaning": "しぐさ・ふるまい",
+          "pos": "名詞"
+        },
+        {
+          "word": "radical",
+          "surface": "radical",
+          "meaning": "過激な・根本的な",
+          "pos": "形容詞"
+        },
+        {
+          "word": "quedar",
+          "surface": "queda",
+          "meaning": "残る",
+          "pos": "動詞"
+        }
+      ],
+      "grammar": "quizá のあとは接続法（sea）を使うと不確実さが強まる。直説法 es も可能だが、接続法のほうが控えめな推量になる。"
+    },
+    {
+      "id": 9,
+      "original": "Mi casa es tu casa, decimos aquí. Nunca dijimos que estuviera ordenada.",
+      "translation": "「私の家はあなたの家」と、この国では言う。片づいているとは一度も言っていない。",
+      "words": [
+        {
+          "word": "ordenado",
+          "surface": "ordenada",
+          "meaning": "片づいた",
+          "pos": "形容詞"
+        }
+      ],
+      "grammar": "Nunca dijimos que estuviera... と主節が否定になると、que 以下は接続法過去（estuviera）になる。断定を避ける働きをする。"
+    }
+  ]
+}
