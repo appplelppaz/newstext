@@ -66,6 +66,11 @@ def process(path, force=False):
 
     changed = 0
     for seg in art["segments"]:
+        # 語注のピンインは執筆時に手で書かないので、ここでまとめて補う
+        for w in seg.get("words", []):
+            if not w.get("reading") or force:
+                w["reading"] = sentence_pinyin(w["word"])
+
         if seg.get("ruby") and not force:
             continue
         text = seg.get("original", "")
@@ -77,10 +82,9 @@ def process(path, force=False):
         seg["pinyin"] = sentence_pinyin(text)
         changed += 1
 
-    if changed:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(art, f, ensure_ascii=False, indent=2)
-            f.write("\n")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(art, f, ensure_ascii=False, indent=2)
+        f.write("\n")
     return changed
 
 

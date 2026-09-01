@@ -273,9 +273,14 @@ select, .icon-btn {
 .popover .term { font-family: var(--latin); font-weight: 700; }
 .popover .term[lang="zh"] { font-family: var(--han); }
 
-ruby { ruby-position: over; }
-rt { font-size: .5em; color: var(--ink-faint); font-family: var(--latin); font-weight: 400; letter-spacing: .02em; }
+/* ルビは隣の音節とくっつくと読めないので、字ごとに少し隙間を空ける */
+ruby { ruby-position: over; margin-inline: .07em; }
+rt {
+  font-size: .48em; color: var(--ink-faint); font-family: var(--latin);
+  font-weight: 400; letter-spacing: .01em; padding-inline: .12em;
+}
 .no-ruby rt { display: none; }
+.no-ruby .original[lang="zh"] { line-height: 2; }
 
 /* 今週のことば */
 .entry {
