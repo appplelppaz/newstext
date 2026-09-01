@@ -1,0 +1,278 @@
+{
+  "metadata": {
+    "issue": "2026-W36",
+    "language": "en",
+    "country": "イギリス",
+    "publishDate": "2026-09-01",
+    "targetLanguage": "ja",
+    "id": "en-2026-W36-life-column",
+    "section": "life-column",
+    "kind": "blog",
+    "title": "Why Britain names its storms",
+    "titleJa": "なぜイギリスは嵐に名前を付けるのか",
+    "leadJa": "9月1日、イギリスの嵐シーズンが始まりました。オースティン、クロエ、エヴリン ―気象庁が毎年発表する嵐の名前は、単なる遊びではありません。天気の話が国民的な趣味であるこの国ならではの、実用的な理由があります。",
+    "category": "生活",
+    "level": "中級",
+    "trivia": "名前の候補は一般公募で集められます。「自分の名前の嵐に襲われた」という奇妙な経験をした人が、毎年イギリスのどこかに必ずいることになります。"
+  },
+  "segments": [
+    {
+      "id": 1,
+      "original": "Every September, the Met Office publishes a list of names, in alphabetical order, that will be given to the storms of the coming winter.",
+      "translation": "毎年9月、イギリス気象庁は、来たる冬の嵐に付けられる名前をアルファベット順に並べたリストを発表する。",
+      "words": [
+        {
+          "word": "Met Office",
+          "surface": "Met Office",
+          "meaning": "イギリス気象庁",
+          "pos": "固有名詞"
+        },
+        {
+          "word": "publish",
+          "surface": "publishes",
+          "meaning": "公表する",
+          "pos": "動詞"
+        },
+        {
+          "word": "in alphabetical order",
+          "surface": "in alphabetical order",
+          "meaning": "アルファベット順に",
+          "pos": "副詞句"
+        },
+        {
+          "word": "coming",
+          "surface": "coming",
+          "meaning": "来たる・次の",
+          "pos": "形容詞"
+        }
+      ],
+      "grammar": "that will be given to ... は names を修飾する関係詞節。長い挿入句（in alphabetical order）を挟んでも、先行詞は names のまま。"
+    },
+    {
+      "id": 2,
+      "original": "To an outsider this looks like a quaint national hobby, filed alongside queuing and talking about the weather.",
+      "translation": "外国人の目には、これは行列や天気の話と並ぶ、風変わりな国民的趣味に見えるかもしれない。",
+      "words": [
+        {
+          "word": "outsider",
+          "surface": "outsider",
+          "meaning": "部外者・よそ者",
+          "pos": "名詞"
+        },
+        {
+          "word": "quaint",
+          "surface": "quaint",
+          "meaning": "風変わりで趣のある",
+          "pos": "形容詞"
+        },
+        {
+          "word": "file",
+          "surface": "filed",
+          "meaning": "分類する・しまい込む",
+          "pos": "動詞"
+        },
+        {
+          "word": "queue",
+          "surface": "queuing",
+          "meaning": "行列に並ぶ",
+          "pos": "動詞"
+        }
+      ],
+      "grammar": "filed alongside ... は過去分詞の分詞構文。「〜と並べて分類された（もののように）」と、前の名詞句に説明を足している。"
+    },
+    {
+      "id": 3,
+      "original": "It is nothing of the sort. The naming scheme began in 2015 for an entirely practical reason.",
+      "translation": "それはまったく違う。この命名制度は2015年に、きわめて実務的な理由から始まった。",
+      "words": [
+        {
+          "word": "nothing of the sort",
+          "surface": "nothing of the sort",
+          "meaning": "そんなことは全然ない",
+          "pos": "名詞句"
+        },
+        {
+          "word": "scheme",
+          "surface": "scheme",
+          "meaning": "制度・計画",
+          "pos": "名詞"
+        },
+        {
+          "word": "entirely",
+          "surface": "entirely",
+          "meaning": "まったく",
+          "pos": "副詞"
+        }
+      ],
+      "grammar": "nothing of the sort は前の内容を強く否定する決まり文句。イギリス英語ではやや改まった、書き言葉寄りの響きを持つ。"
+    },
+    {
+      "id": 4,
+      "original": "Forecasters had found that warnings about \"an area of low pressure\" simply did not stick in people's minds.",
+      "translation": "予報士たちは、「低気圧域」についての警報が人々の記憶にまるで残らないことに気づいていた。",
+      "words": [
+        {
+          "word": "forecaster",
+          "surface": "Forecasters",
+          "meaning": "予報士",
+          "pos": "名詞"
+        },
+        {
+          "word": "warning",
+          "surface": "warnings",
+          "meaning": "警報",
+          "pos": "名詞"
+        },
+        {
+          "word": "low pressure",
+          "surface": "low pressure",
+          "meaning": "低気圧",
+          "pos": "名詞"
+        },
+        {
+          "word": "stick",
+          "surface": "stick",
+          "meaning": "（記憶に）残る",
+          "pos": "動詞"
+        }
+      ],
+      "grammar": "had found は過去完了。主節の過去（began）よりさらに前に起きたことを示し、時間の前後関係をはっきりさせている。"
+    },
+    {
+      "id": 5,
+      "original": "Give the same weather system a human name, however, and people talk about it, share it, and take it seriously.",
+      "translation": "ところが同じ気象システムに人間の名前を付けてやると、人々はそれを話題にし、共有し、真剣に受け止める。",
+      "words": [
+        {
+          "word": "weather system",
+          "surface": "weather system",
+          "meaning": "気象システム・気圧配置",
+          "pos": "名詞"
+        },
+        {
+          "word": "however",
+          "surface": "however",
+          "meaning": "しかしながら",
+          "pos": "副詞"
+        },
+        {
+          "word": "take seriously",
+          "surface": "take it seriously",
+          "meaning": "真剣に受け止める",
+          "pos": "動詞句"
+        }
+      ],
+      "grammar": "命令法 + and で「〜すれば…する」という条件を表す。If you give ... と同じ意味だが、より簡潔で力強い。"
+    },
+    {
+      "id": 6,
+      "original": "There is a strict rule: a storm only gets a name if it is expected to cause enough damage to warrant a warning.",
+      "translation": "厳格な規則がある。嵐に名前が付くのは、警報を出すに足る被害が予想される場合に限られる。",
+      "words": [
+        {
+          "word": "strict",
+          "surface": "strict",
+          "meaning": "厳格な",
+          "pos": "形容詞"
+        },
+        {
+          "word": "expect",
+          "surface": "expected",
+          "meaning": "予期する",
+          "pos": "動詞"
+        },
+        {
+          "word": "damage",
+          "surface": "damage",
+          "meaning": "被害",
+          "pos": "名詞"
+        },
+        {
+          "word": "warrant",
+          "surface": "warrant",
+          "meaning": "〜に値する・正当化する",
+          "pos": "動詞"
+        }
+      ],
+      "grammar": "コロンのあとで規則の中身を説明する構成。only ... if ~ で「〜の場合に限って…する」という限定条件を表している。"
+    },
+    {
+      "id": 7,
+      "original": "So a named storm is not a joke. It is a signal that someone, somewhere, should be moving the garden furniture indoors.",
+      "translation": "だから名前の付いた嵐は冗談ではない。どこかの誰かが庭の家具を屋内にしまうべきだという合図なのだ。",
+      "words": [
+        {
+          "word": "signal",
+          "surface": "signal",
+          "meaning": "合図・信号",
+          "pos": "名詞"
+        },
+        {
+          "word": "garden furniture",
+          "surface": "garden furniture",
+          "meaning": "庭用の家具",
+          "pos": "名詞"
+        },
+        {
+          "word": "indoors",
+          "surface": "indoors",
+          "meaning": "屋内へ",
+          "pos": "副詞"
+        }
+      ],
+      "grammar": "someone, somewhere とコンマで区切って並べることで「どこかの誰かが」と漠然とした対象を印象づけている。"
+    },
+    {
+      "id": 8,
+      "original": "The names themselves are gathered from public suggestions, which is how Britain ends up with storms called Bert and Gerrit.",
+      "translation": "名前そのものは一般からの応募で集められる。だからイギリスにはバートやゲリットという名の嵐が生まれることになる。",
+      "words": [
+        {
+          "word": "gather",
+          "surface": "gathered",
+          "meaning": "集める",
+          "pos": "動詞"
+        },
+        {
+          "word": "suggestion",
+          "surface": "suggestions",
+          "meaning": "提案・応募",
+          "pos": "名詞"
+        },
+        {
+          "word": "end up with",
+          "surface": "ends up with",
+          "meaning": "結局〜になる",
+          "pos": "句動詞"
+        }
+      ],
+      "grammar": "which is how ... は前の文全体を受ける関係代名詞 which。「そういうわけで〜なのだ」と、理由と結果をつなぐ働きをする。"
+    },
+    {
+      "id": 9,
+      "original": "This year's list starts with Austen. Come January, half the country will be blaming him for a fallen fence.",
+      "translation": "今年のリストはオースティンから始まる。1月ともなれば、国じゅうの半分が倒れたフェンスを彼のせいにしているだろう。",
+      "words": [
+        {
+          "word": "come",
+          "surface": "Come",
+          "meaning": "〜になれば",
+          "pos": "前置詞"
+        },
+        {
+          "word": "blame",
+          "surface": "blaming",
+          "meaning": "〜のせいにする",
+          "pos": "動詞"
+        },
+        {
+          "word": "fallen",
+          "surface": "fallen",
+          "meaning": "倒れた",
+          "pos": "形容詞"
+        }
+      ],
+      "grammar": "Come January は「1月が来れば」を表す古風で慣用的な用法。Come Monday, come summer のように時を表す語の前に置く。"
+    }
+  ]
+}
