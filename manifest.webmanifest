@@ -1,0 +1,14 @@
+{
+  "name": "Level 1 — 中検1級",
+  "short_name": "Level 1",
+  "lang": "ja",
+  "start_url": "./#/today",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f7f6f3",
+  "theme_color": "#f7f6f3",
+  "icons": [
+    { "src": "assets/icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

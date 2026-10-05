@@ -467,3 +467,4 @@ mark.blank.cur { background: color-mix(in srgb, var(--accent) 18%, transparent);
   .split.write > .pane-l { position: static; max-height: none; overflow: visible; }
 }
 .hint + .label { margin-top: 16px; }
+.toast.stay { animation: none; border: 0; font: inherit; font-size: 13px; cursor: pointer; }

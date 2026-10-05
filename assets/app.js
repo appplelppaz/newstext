@@ -63,6 +63,44 @@
     setTimeout(() => el.remove(), 2300);
   }
 
+  // ---------- オフライン（Service Worker） ----------
+  // 一度開けば、アプリのファイルと字体が端末に保存され、電波がなくても開ける
+  const offline = { ready: false, persisted: null };
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    const hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js')
+      .then(() => navigator.serviceWorker.ready)
+      .then(() => { offline.ready = true; })
+      .catch(() => { /* 登録できなくてもアプリは動かす */ });
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || document.querySelector('.toast.stay')) return; // 初回のインストールでは知らせない
+      const el = document.createElement('button');
+      el.className = 'toast stay';
+      el.textContent = 'Updated · tap to reload';
+      el.addEventListener('click', () => location.reload());
+      document.body.appendChild(el);
+    });
+  }
+  // 過去問データと手書きの線（IndexedDB）を、ブラウザが勝手に消さないように頼む
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persisted().then((p) => p || navigator.storage.persist()).then((p) => { offline.persisted = p; }).catch(() => {});
+  }
+  async function offlineInfo() {
+    const el = app.querySelector('#offline');
+    if (!el) return;
+    const est = navigator.storage && navigator.storage.estimate ? await navigator.storage.estimate().catch(() => null) : null;
+    const zh = 'speechSynthesis' in window ? speechSynthesis.getVoices().filter((v) => /^zh[-_](CN|Hans)/i.test(v.lang)) : [];
+    const home = window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+    const row = (ok, t, sub) => `<div class="rrow"><span class="${ok ? 'ok' : 'ng'}">${ok ? '✓' : '–'}</span><span>${t}${sub ? `<div class="muted small">${sub}</div>` : ''}</span></div>`;
+    el.innerHTML = [
+      row(offline.ready, offline.ready ? 'App saved for offline use' : 'Not saved yet', offline.ready ? '' : 'ネットにつないだ状態で一度開くと保存されます。'),
+      row(home, home ? 'Home Screen app' : 'Opened in Safari', home ? '' : 'Safari の共有ボタン › 「ホーム画面に追加」で、全画面のアプリとして使えます。'),
+      row(offline.persisted === true, `Storage ${est ? `${(est.usage / 1048576).toFixed(1)} MB` : ''}${offline.persisted ? ' · kept' : ''}`, offline.persisted ? '' : '過去問データと手書きは端末に保存されます。ホーム画面に追加すると消されにくくなります。'),
+      row(zh.length > 0, zh.length ? `Chinese voice · ${esc(zh.map((v) => v.name).slice(0, 3).join(', '))}` : 'No Chinese voice', zh.length ? '電波がなくても読み上げで聞き取り練習ができます。' : '設定 › アクセシビリティ › 読み上げコンテンツ › 声 › 中国語 で、高音質の声をダウンロードしてください。'),
+    ].join('');
+  }
+  if ('speechSynthesis' in window) speechSynthesis.addEventListener('voiceschanged', () => offlineInfo());
+
   // ---------- 進捗の計算 ----------
   const taskDone = (t) => (t.fixed ? !!fixed[t.fixed] : t.ids.every((id) => done[id]));
   const tasksOf = (k) => R.days.get(k) || [];
@@ -489,10 +527,12 @@
           <div class="seg">${['system', 'light', 'dark'].map((t) => `<button type="button" data-theme="${t}" class="${theme === t ? 'on' : ''}">${t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div></div>
         <div class="field"><span class="label">Plan</span>
           <div class="actions" style="margin:0"><button class="btn" id="rb">Rebalance from today</button>${(S.anchors || []).length ? '<button class="btn" id="unrb">Reset plan</button>' : ''}</div></div>
+        <div class="field"><span class="label">Offline</span><div class="note-box rubric" id="offline"></div></div>
         <div class="field"><span class="label">Data</span>
           <div class="actions" style="margin:0"><button class="btn" id="export">Export</button><label class="btn">Import<input type="file" id="import" accept="application/json" hidden></label><button class="btn" id="wipe">Erase</button></div></div>
       </div>`;
 
+    offlineInfo();
     const bind = (sel, key, f = (v) => v) => app.querySelector(sel).addEventListener('change', (e) => {
       S[key] = f(e.target.value);
       saveSettings();
