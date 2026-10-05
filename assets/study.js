@@ -385,6 +385,7 @@ window.Study = function Study(ctx) {
       return;
     }
     if (s.type === 'summary') return viewSummary(pid, s, head);
+    if (s.type === 'dictation') return viewDictation(pid, s, head);
     return viewWrite(pid, s, head);
   }
 
@@ -436,6 +437,48 @@ window.Study = function Study(ctx) {
     app.querySelector('#rsave').addEventListener('click', () => { saveScore(pid, sec, sum(), max); toast('Saved'); });
   }
 
+  // 書き取り（全文を聞き、指定の5か所を漢字で書く）
+  function diffChars(mine, model) {
+    const a = [...String(mine).replace(/\s/g, '')];
+    const b = [...String(model).replace(/\s/g, '')];
+    const L = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+    for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) L[i][j] = a[i] === b[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    const hit = new Array(b.length).fill(false);
+    for (let i = 0, j = 0; i < a.length && j < b.length;) {
+      if (a[i] === b[j]) { hit[j] = true; i++; j++; } else if (L[i + 1][j] >= L[i][j + 1]) i++; else j++;
+    }
+    const ok = hit.filter(Boolean).length;
+    const extra = a.length - ok;
+    return { html: b.map((c, k) => (hit[k] ? esc(c) : `<mark>${esc(c)}</mark>`)).join(''), miss: b.length - ok, extra };
+  }
+  function viewDictation(pid, s, head) {
+    const p = (s.passages || [])[0] || {};
+    let shown = false;
+    const draw = () => {
+      app.innerHTML = `${head}
+        <div class="pbox"><div class="row"><button class="btn sm" data-tts="all">▶ Whole text</button><button class="btn sm" data-stop>■</button>${rateSel()}</div>
+          <p class="muted small" style="margin:8px 0 0">本番は4回：全文 → 5か所を区切って2回 → 全文</p></div>
+        ${s.tasks.map((t) => {
+          const key = `${pid}|${s.id}|${t.n}`;
+          const d = shown ? diffChars(texts[key] || '', t.model) : null;
+          return `<div class="wtask"><div class="row"><span class="label">(${t.n}) · ${t.pts} pts</span><span class="spacer"></span><button class="btn sm" data-tts="t${t.n}">▶</button></div>
+            <textarea class="answer short" data-key="${key}" placeholder="漢字で書き取る">${esc(texts[key] || '')}</textarea>
+            ${shown ? `<div class="src diff">${d.html}</div><p class="muted small">${d.miss ? `${d.miss} 字の聞き落とし・誤り` : '全文一致'}${d.extra ? ` · 余分な字 ${d.extra}` : ''}</p>${t.note ? `<p class="small">${esc(t.note)}</p>` : ''}${(t.vocab || []).map(vocabLine).join('')}` : ''}
+          </div>`;
+        }).join('')}
+        <div class="actions"><span class="spacer"></span><button class="btn" id="show">${shown ? 'Hide' : 'Check'}</button></div>
+        ${shown ? `<div class="ex-block"><div class="label">Script</div><div class="zh-text">${esc(p.zh || '')}</div>${p.ja ? `<details class="ja-det"><summary>日本語訳</summary><div>${esc(p.ja)}</div></details>` : ''}${(p.vocab || []).map(vocabLine).join('')}</div>
+          ${rubricHTML(s.tasks.map((t) => [`(${t.n}) 全文正確（誤字1字につき減点されるので、1字でも違えば外す）`, t.pts]), s.pts)}` : ''}`;
+      const texts2 = { all: p.zh };
+      s.tasks.forEach((t) => { texts2[`t${t.n}`] = t.model; });
+      bindTTS(app, texts2);
+      app.querySelectorAll('textarea[data-key]').forEach((ta) => ta.addEventListener('input', () => { texts[ta.dataset.key] = ta.value; save(); }));
+      app.querySelector('#show').addEventListener('click', () => { shown = !shown; draw(); });
+      bindRubric(pid, s.id, s.pts);
+    };
+    draw();
+  }
+
   // 翻訳（中文日訳・日文中訳）
   function viewWrite(pid, s, head) {
     const p = (s.passages || [])[0];
@@ -448,7 +491,8 @@ window.Study = function Study(ctx) {
           return `<div class="wtask">
             <div class="label">(${t.n}) · ${t.pts} pts</div>
             <div class="src">${esc(t.src)}</div>
-            <textarea class="answer" data-key="${key}" placeholder="${s.type === 'zhja' ? '日本語訳' : '中文翻译'}">${esc(texts[key] || '')}</textarea>
+            ${t.words ? `<div class="chips">${t.words.map((w) => `<span class="chip ${(texts[key] || '').includes(w) ? 'accent' : ''}">${esc(w)}</span>`).join('')}<span class="chip" data-cnt="${key}">${count(texts[key])} / ${t.limit[0]}–${t.limit[1]}</span></div>` : ''}
+            <textarea class="answer ${t.short ? 'short' : ''}" data-key="${key}" placeholder="${t.short ? '漢字（簡体字）' : t.words ? '作文' : s.type === 'zhja' ? '日本語訳' : '中文翻译'}">${esc(texts[key] || '')}</textarea>
             <div class="actions"><span class="spacer"></span><button class="btn" data-show="${t.n}">${shown[t.n] ? 'Hide' : 'Check'}</button></div>
             ${shown[t.n] ? `
               <div class="ex-block"><div class="label">Model</div><div class="src">${esc(t.model)}</div></div>
@@ -458,8 +502,13 @@ window.Study = function Study(ctx) {
               ${t.vocab && t.vocab.length ? `<div class="ex-block"><div class="label">Words</div>${t.vocab.map(vocabLine).join('')}</div>` : ''}` : ''}
           </div>`;
         }).join('')}
-        ${Object.keys(shown).length ? rubricHTML(s.tasks.flatMap((t) => [[`(${t.n}) 意味が原文どおり正確（訳し落とし・誤訳がない）`, Math.round(t.pts * 0.6)], [`(${t.n}) 自然な${s.type === 'zhja' ? '日本語' : '中国語'}になっている`, Math.round(t.pts * 0.3)], [`(${t.n}) 誤字・脱字・字体の混用がない`, t.pts - Math.round(t.pts * 0.6) - Math.round(t.pts * 0.3)]]), s.pts) : ''}`;
-      app.querySelectorAll('textarea[data-key]').forEach((ta) => ta.addEventListener('input', () => { texts[ta.dataset.key] = ta.value; save(); }));
+        ${Object.keys(shown).length ? rubricHTML(s.tasks.flatMap((t) => t.short ? [[`(${t.n}) 正しく書けた`, t.pts]] : t.words ? [[`(${t.n}) 指定語を3つ以上、正しい意味・用法で使った`, Math.round(t.pts * 0.375)], [`(${t.n}) 内容がテーマに合い、筋が通っている`, Math.round(t.pts * 0.25)], [`(${t.n}) 文法・語彙の誤りがない`, Math.round(t.pts * 0.25)], [`(${t.n}) 字数が範囲内、字体の混用がない`, t.pts - Math.round(t.pts * 0.375) - 2 * Math.round(t.pts * 0.25)]] : [[`(${t.n}) 意味が原文どおり正確（訳し落とし・誤訳がない）`, Math.round(t.pts * 0.6)], [`(${t.n}) 自然な${s.type === 'zhja' ? '日本語' : '中国語'}になっている`, Math.round(t.pts * 0.3)], [`(${t.n}) 誤字・脱字・字体の混用がない`, t.pts - Math.round(t.pts * 0.6) - Math.round(t.pts * 0.3)]]), s.pts) : ''}`;
+      app.querySelectorAll('textarea[data-key]').forEach((ta) => ta.addEventListener('input', () => {
+        texts[ta.dataset.key] = ta.value;
+        save();
+        const c = app.querySelector(`[data-cnt="${ta.dataset.key}"]`);
+        if (c) c.textContent = c.textContent.replace(/^\d+/, count(ta.value));
+      }));
       app.querySelectorAll('[data-show]').forEach((b) => b.addEventListener('click', () => { const n = b.dataset.show; shown[n] = !shown[n]; shown.any = true; draw(); }));
       bindRubric(pid, s.id, s.pts);
     };

@@ -313,3 +313,6 @@ h2.section { margin: 32px 0 12px; }
 .tbl td { padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .tabs a { min-width: 0; }
 .tabs span { white-space: nowrap; }
+.chip.on, button.chip.on:hover { color: var(--bg); }
+.answer.short { min-height: 70px; }
+.diff mark { background: color-mix(in srgb, var(--accent) 22%, transparent); color: inherit; border-radius: 2px; }
