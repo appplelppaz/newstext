@@ -51,19 +51,27 @@ window.GUIDE = {
       why: '限られた時間で最大の効果を出すには、できている所の繰り返しを減らし、できていない所に時間を回す必要がある。',
       how: 'チェックポイントと過去問の結果から、分野別・原因別に弱点を出し、次のチェックポイントまでの毎日の Focus タスクに自動で入れる。',
     },
+    {
+      h: 'Apple Pencil は「本番で手で書く所」だけに使う',
+      why: '中検の記述（日文中訳・作文・要約・書き取り・ピンインの漢字書き）はすべて紙に手書きする。練習の形を本番に合わせるほど、本番で覚えたことを引き出しやすい（転移適切処理：Morris, Bransford & Franks 1977）。また中国語の学習では、手で書くことが字形の記憶と読みの力を支えることが示されている（Tan et al. 2005; Guan et al. 2011）。キーボードの変換では、似た字・繁体字との混同（減点対象）に気づけない。',
+      how: '中訳・作文・要約・書き取り・漢字書きは原稿用紙のマス目に Pencil で書く（字数はインクの入ったマスで数え、句読点も1字）。聞き取りではメモ帳に手でメモする。書けなかった字は Hanzi デッキに入れ、手で書いて思い出す。逆に、4択・ピンイン・成語の意味は「認識」の問題なのでタップで速く量をこなし、中文日訳は答えが日本語なのでキーボードで書く。本文へのマーカーは学習効果が低い（Dunlosky et al. 2013）ので付けず、代わりに今の設問の空欄を自動で強調する。',
+    },
   ],
   refs: [
     'Cepeda, N. J., Vul, E., Rohrer, D., Wixted, J. T., & Pashler, H. (2008). Spacing effects in learning: A temporal ridgeline of optimal retention. Psychological Science, 19, 1095–1102.',
     'Dunlosky, J., Rawson, K. A., Marsh, E. J., Nathan, M. J., & Willingham, D. T. (2013). Improving students’ learning with effective learning techniques. Psychological Science in the Public Interest, 14(1), 4–58.',
+    'Guan, C. Q., Liu, Y., Chan, D. H. L., Ye, F., & Perfetti, C. A. (2011). Writing strengthens orthography and alphabetic-coding strengthens phonology in learning to read Chinese. Journal of Educational Psychology, 103(3), 509–522.',
     'Hamada, Y. (2016). Shadowing: Who benefits and how? Uncovering a booming EFL teaching technique for listening comprehension. Language Teaching Research, 20(1), 35–52.',
     'Hu, M., & Nation, I. S. P. (2000). Unknown vocabulary density and reading comprehension. Reading in a Foreign Language, 13(1), 403–430.',
     'Krashen, S. (1985). The Input Hypothesis: Issues and Implications. Longman.',
     'Ku, Y.-M., & Anderson, R. C. (2003). Development of morphological awareness in Chinese and English. Reading and Writing, 16, 399–422.',
     'Laufer, B., & Ravenhorst-Kalovski, G. C. (2010). Lexical threshold revisited. Reading in a Foreign Language, 22(1), 15–30.',
+    'Morris, C. D., Bransford, J. D., & Franks, J. J. (1977). Levels of processing versus transfer appropriate processing. Journal of Verbal Learning and Verbal Behavior, 16, 519–533.',
     'Nation, P. (2007). The four strands. Innovation in Language Learning and Teaching, 1(1), 2–13.',
     'Roediger, H. L., & Karpicke, J. D. (2006). Test-enhanced learning: Taking memory tests improves long-term retention. Psychological Science, 17, 249–255.',
     'Rohrer, D., & Taylor, K. (2007). The shuffling of mathematics problems improves learning. Instructional Science, 35, 481–498.',
     'Swain, M. (1995). Three functions of output in second language learning. In G. Cook & B. Seidlhofer (Eds.), Principle and Practice in Applied Linguistics (pp. 125–144). Oxford University Press.',
+    'Tan, L. H., Spinks, J. A., Eden, G. F., Perfetti, C. A., & Siok, W. T. (2005). Reading depends on writing, in Chinese. Proceedings of the National Academy of Sciences, 102(24), 8781–8785.',
   ],
 
   exam: {

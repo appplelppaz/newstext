@@ -125,7 +125,7 @@
   function viewToday(k) {
     const today = todayS();
     k = k || today;
-    const tasks = [...tasksOf(k), ...ST.focusTasks(k)];
+    const tasks = [...tasksOf(k), ...ST.focusTasks(k), ...ST.extraTasks(k)];
     const left = Math.max(0, Math.round((toT(S.exam) - toT(today)) / DAY));
     const pct = Math.round(overall() * 100);
     const C = 2 * Math.PI * 42;
@@ -133,8 +133,12 @@
     const total = tasks.reduce((s, t) => s + t.min, 0);
     const od = k === today ? overdue() : 0;
     const allDone = tasks.length && tasks.every(taskDone);
+    const cpDays = window.Plan.checkpointDays({ ...window.Plan.DEFAULTS, ...S, rest: (S.rest || []).map(Number) }, R.P);
+    const nextCp = cpDays.findIndex((t) => toS(t) >= today);
 
     app.innerHTML = `
+      <div class="today-view">
+      <aside class="t-side">
       <div class="daynav">
         <button data-go="${addDays(k, -1)}" aria-label="Previous day">${LEFT}</button>
         <div class="date">${fmt(k)}${k === today ? '<small>Today</small>' : `<small><a href="#/today">Back to today</a></small>`}</div>
@@ -154,10 +158,15 @@
         ${ph ? `<span class="chip">${ph.id} · ${ph.name}</span>` : ''}
         ${total ? `<span class="chip">${hm(total)}</span>` : ''}
         <span class="chip">Streak ${streak()}</span>
+        ${nextCp >= 0 ? `<a class="chip" href="#/check/${nextCp}">CP${nextCp} · ${fmt(toS(cpDays[nextCp]))}</a>` : ''}
         ${od ? `<button class="chip accent" id="rebalance">${od} overdue · Rebalance</button>` : ''}
       </div>
+      </aside>
+      <section class="t-main">
       ${tasks.length ? `<div class="tasks">${tasks.map(taskHTML).join('')}</div>` : `<div class="empty">${k >= S.exam ? 'Exam day.' : 'Rest.'}</div>`}
       ${allDone ? `<div class="complete"><span class="seal">完</span><div class="word">Done.</div></div>` : ''}
+      </section>
+      </div>
     `;
 
     app.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { location.hash = `#/today/${b.dataset.go}`; }));
@@ -283,7 +292,7 @@
     });
 
     app.innerHTML = `
-      <div class="hero">
+      <div class="hero p-hero">
         <div><div class="count">${Math.round(overall() * 100)}<span style="font-size:.4em">%</span></div><div class="label count-unit">complete</div></div>
         <div style="text-align:right">
           <div class="serif" style="font-size:28px;font-weight:700">${studied}</div><div class="label">days</div>
@@ -293,6 +302,7 @@
       <div class="timeline">${R.P.map((p) => `<div style="width:${((p.b - p.a) / span) * 100}%"></div>`).join('')}<span class="past" style="width:${past * 100}%"></span></div>
       <div class="phases">${R.P.map((p) => `<div style="width:${((p.b - p.a) / span) * 100}%"><b>${p.id}</b>${p.name}</div>`).join('')}</div>
 
+      <div class="dash"><div class="dcard">
       <h2 class="section label">Books</h2>
       <div class="bars">${CATS.map(([name, test]) => {
         const mine = ids.filter(test);
@@ -305,7 +315,7 @@
         </div>`;
       }).join('')}</div>
       <div class="legend" style="margin-top:18px"><span style="display:inline-block;width:2px;height:10px;background:var(--ink);opacity:.5"></span>&nbsp;plan</div>
-      ${ST.progressHTML()}
+      </div><div class="dcard">${ST.progressHTML()}</div></div>
     `;
   }
 
@@ -347,13 +357,13 @@
     const newN = queue.filter((n) => !srs[n]).length;
     const head = `
       <div class="row" style="margin:6px 0 4px">
-        <div class="seg">${[['study', 'Idioms'], ['vocab', 'Vocab'], ['groups', 'Groups'], ['all', 'All']].map(([m, l]) => `<button data-mode="${m}" class="${idMode === m ? 'on' : ''}">${l}</button>`).join('')}</div>
+        <div class="seg">${[['study', 'Idioms'], ['vocab', 'Vocab'], ['hanzi', 'Hanzi'], ['groups', 'Groups'], ['all', 'All']].map(([m, l]) => `<button data-mode="${m}" class="${idMode === m ? 'on' : ''}">${l}</button>`).join('')}</div>
         <span class="spacer"></span>
-        ${idMode === 'study' ? `<span class="chip">New ${newN}</span><span class="chip">Due ${dueN}</span>` : idMode === 'all' ? `<span class="chip">${IDIOMS.length}</span>` : ''}
+        ${idMode === 'study' ? `<span class="chip">New ${newN}</span><span class="chip">Due ${dueN}</span>` : idMode === 'all' ? `<span class="chip">${IDIOMS.length}</span>` : idMode === 'hanzi' ? `<span class="chip">Due ${ST.hzCount()[0]}</span><span class="chip">${ST.hzCount()[1]}</span>` : ''}
       </div>`;
 
-    if (idMode === 'vocab' || idMode === 'groups') {
-      (idMode === 'vocab' ? ST.viewVocab : ST.viewGroups)(app, head);
+    if (idMode === 'vocab' || idMode === 'groups' || idMode === 'hanzi') {
+      ({ vocab: ST.viewVocab, groups: ST.viewGroups, hanzi: ST.viewHanzi })[idMode](app, head);
       app.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { idMode = b.dataset.mode; location.hash = `#/idioms/${idMode}`; }));
       return;
     } else if (idMode === 'all') {
@@ -414,37 +424,49 @@
     const x = TRANS[n - 1];
     if (!x) { location.hash = '#/translate'; return; }
     const id = done[`tr-${n}`] ? `trr-${n}` : `tr-${n}`;
+    // 日文中訳は本番どおり手で書く（Pencil）。中文日訳は答えが日本語なのでキーボード
+    const zhOut = x.dir === 'JA → ZH';
+    let shown = false;
     app.innerHTML = `
       <div class="daynav">
         <button data-go="${Math.max(1, n - 1)}" aria-label="Previous">${LEFT}</button>
         <div class="date">T${n}<small>${esc(x.dir)} · ${esc(x.t)}</small></div>
         <button data-go="${Math.min(TRANS.length, n + 1)}" aria-label="Next">${RIGHT}</button>
       </div>
-      <div class="src">${esc(x.src)}</div>
-      <textarea class="answer" aria-label="Your translation">${esc(drafts[n] || '')}</textarea>
-      <div class="actions">
-        <button class="btn" id="show">Show</button>
-        <span class="spacer"></span>
-        <button class="btn ${done[id] ? '' : 'accent'}" id="mark">${done[id] ? 'Undo' : 'Done'}</button>
-      </div>
-      <div class="model" hidden>
-        <div class="label" style="margin-top:20px">Model</div>
-        <div class="src">${esc(x.model)}</div>
-        <div class="label">Points</div>
-        <ul class="pts">${x.pts.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>
+      ${zhOut ? `<div class="row wbar lead">${ST.modeSwitch()}<span class="muted small">本番と同じく手で書く</span></div>` : ''}
+      <div class="split write">
+        <div class="pane-l"><div class="src">${esc(x.src)}</div><div id="tmodel"></div></div>
+        <div class="pane-r">
+          <div id="tin"></div>
+          <div class="actions">
+            <button class="btn" id="show">Show</button>
+            <span class="spacer"></span>
+            <button class="btn ${done[id] ? '' : 'accent'}" id="mark">${done[id] ? 'Undo' : 'Done'}</button>
+          </div>
+        </div>
       </div>`;
-    const ta = app.querySelector('.answer');
-    ta.addEventListener('input', () => { drafts[n] = ta.value; store.set('drafts', drafts); });
-    app.querySelector('#show').addEventListener('click', (e) => {
-      const m = app.querySelector('.model');
-      m.hidden = !m.hidden;
-      e.target.textContent = m.hidden ? 'Show' : 'Hide';
+    const mount = () => ST.penInput(app.querySelector('#tin'), {
+      key: `tr|${n}|ink`, keyOnly: !zhOut, lang: zhOut ? 'zh-CN' : 'ja', fit: Math.ceil(window.Ink.chars(x.model).length * 1.3), tall: true,
+      text: () => drafts[n] || '', setText: (v) => { drafts[n] = v; store.set('drafts', drafts); }, placeholder: 'Your translation',
     });
-    app.querySelector('#mark').addEventListener('click', () => {
+    mount();
+    const wb = app.querySelector('.wbar');
+    if (wb) ST.bindModeSwitch(wb, mount);
+    app.querySelector('#show').addEventListener('click', (e) => {
+      shown = !shown;
+      e.target.textContent = shown ? 'Hide' : 'Show';
+      app.querySelector('#tmodel').innerHTML = shown ? `
+        <div class="label" style="margin-top:20px">Model</div>
+        ${zhOut ? ST.tapHTML(x.model, `T${n}`) : `<div class="src">${esc(x.model)}</div>`}
+        <div class="label">Points</div>
+        <ul class="pts">${x.pts.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : '';
+    });
+    app.querySelector('#mark').addEventListener('click', (e) => {
       if (done[id]) delete done[id];
       else done[id] = todayS();
       store.set('done', done);
-      viewTranslate(n);
+      e.target.textContent = done[id] ? 'Undo' : 'Done';
+      e.target.classList.toggle('accent', !done[id]);
     });
     app.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { location.hash = `#/translate/${b.dataset.go}`; }));
   }
@@ -544,11 +566,14 @@
     const [, view = 'today', arg, arg2] = location.hash.split('/');
     const tab = { check: 'today', drill: 'today', method: 'papers', guide: 'papers' }[view] || view;
     document.querySelectorAll('.tabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
+    app.dataset.view = view;
+    const sc = document.getElementById('sidecount');
+    if (sc) sc.textContent = Math.max(0, Math.round((toT(S.exam) - toT(todayS())) / DAY));
     if (view !== 'idioms') { queue = null; reveal = false; }
     if (route.last !== location.hash) { ST.stop(); if (!(view === 'check' && arg2 === 'result')) ST.resetSession(); }
     route.last = location.hash;
     if (view === 'plan') viewPlan(arg);
-    else if (view === 'idioms') { idMode = ['vocab', 'groups', 'all'].includes(arg) ? arg : 'study'; viewIdioms(); }
+    else if (view === 'idioms') { idMode = ['vocab', 'hanzi', 'groups', 'all'].includes(arg) ? arg : 'study'; viewIdioms(); }
     else if (view === 'papers') {
       if (!arg) ST.viewPapers();
       else if (arg === 'review') ST.viewReview();
