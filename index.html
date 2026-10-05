@@ -2,37 +2,56 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NEWSTEXT — 週刊 多言語ニュースマガジン</title>
-<meta name="description" content="イギリス・中国・スペイン・フランスの今週の話題で学ぶ、週刊の語学マガジン。日本語訳・語注・文法解説を原文のすぐ横に。">
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f7f6f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f0f0f" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Level 1">
+<title>Level 1</title>
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@500;700&display=swap">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-<header class="masthead">
-  <a class="logo" href="#/" aria-label="NEWSTEXT トップへ">
-    <span class="logo-mark">NEWSTEXT</span>
-    <span class="logo-sub">週刊 多言語ニュースマガジン</span>
+<header class="top">
+  <a class="brand" href="#/today" aria-label="Today"><span class="seal">壹</span><span>Level 1</span></a>
+  <a class="icon-btn" href="#/settings" aria-label="Settings">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
   </a>
-  <nav class="masthead-nav">
-    <select id="issue-picker" aria-label="号を選ぶ"></select>
-    <button id="theme-toggle" class="icon-btn" type="button" aria-label="表示テーマを切り替える">◐</button>
-  </nav>
 </header>
 
 <main id="app" tabindex="-1"></main>
 
-<footer class="colophon">
-  <p><strong>NEWSTEXT</strong> — イギリス・中国・スペイン・フランスの今週の話題で学ぶ語学マガジン。</p>
-  <p class="colophon-note">
-    「カバーストーリー」「今週の短信」は各社が配信目的で公開している RSS の見出しと要約を、
-    出典と元記事へのリンクを明示して引用しています。著作権は各報道機関に帰属します。
-    「街の会話」「暮らしのコラム」「今週のことば」「カルチャー案内」は、
-    同じ話題をもとにした本誌の書き下ろしです。
-  </p>
-</footer>
+<nav class="tabs" aria-label="Sections">
+  <a class="side-brand" href="#/today" aria-label="Today"><span class="seal">壹</span><span>Level 1</span></a>
+  <a href="#/today" data-tab="today"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5" class="fill"/></svg><span>Today</span></a>
+  <a href="#/plan" data-tab="plan"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span>Plan</span></a>
+  <a href="#/papers" data-tab="papers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg><span>Papers</span></a>
+  <a href="#/idioms" data-tab="idioms"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 9h6M9 13h6"/></svg><span>Words</span></a>
+  <a href="#/translate" data-tab="translate"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h12l-3-3M20 16H8l3 3"/></svg><span>Translate</span></a>
+  <a href="#/progress" data-tab="progress"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V11M12 19V5M19 19v-6"/></svg><span>Progress</span></a>
+  <div class="side-foot">
+    <div class="side-count"><b id="sidecount"></b><span>days to exam</span></div>
+    <a href="#/settings" data-tab="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Settings</span></a>
+  </div>
+</nav>
 
-<script src="data/magazine.js"></script>
+<script src="data/books.js"></script>
+<script src="data/idioms-a.js"></script>
+<script src="data/idioms-b.js"></script>
+<script src="data/idioms-c.js"></script>
+<script src="data/translation-a.js"></script>
+<script src="data/translation-b.js"></script>
+<script src="data/papers-index.js"></script>
+<script src="data/checkpoints.js"></script>
+<script src="data/guide.js"></script>
+<script src="assets/plan.js"></script>
+<script src="assets/ink.js"></script>
+<script src="assets/study.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>

@@ -1,645 +1,596 @@
-/* NEWSTEXT — 誌面の描画とルーティング。依存ライブラリなし。 */
+// 画面。スケジュールは assets/plan.js、教材データは data/*.js
 (function () {
-  "use strict";
+  'use strict';
 
-  var DATA = window.NEWSTEXT;
-  var app = document.getElementById("app");
+  const { build, toT, toS, dow, DAY, idiomList, translationList } = window.Plan;
+  const app = document.getElementById('app');
 
-  var FLAG = { en: "🇬🇧", zh: "🇨🇳", es: "🇪🇸", fr: "🇫🇷" };
-  var LANG_NAME = { en: "英語", zh: "中国語", es: "スペイン語", fr: "フランス語" };
-  var KIND_NAME = { news: "ニュース", dialogue: "会話", blog: "読み物", buzzword: "語彙", grammar: "文法", culture: "読み物" };
-
-  /* ── 小道具 ────────────────────────────────── */
-
-  function el(tag, attrs, children) {
-    var node = document.createElement(tag);
-    for (var k in attrs || {}) {
-      if (attrs[k] == null) continue;
-      if (k === "class") node.className = attrs[k];
-      else if (k === "text") node.textContent = attrs[k];
-      else if (k === "html") node.innerHTML = attrs[k];
-      else node.setAttribute(k, attrs[k]);
-    }
-    (children || []).forEach(function (c) {
-      if (c) node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
-    });
-    return node;
-  }
-
-  function sectionInfo(id) {
-    for (var i = 0; i < DATA.sections.length; i++) {
-      if (DATA.sections[i].id === id) return DATA.sections[i];
-    }
-    return { id: id, name: id, blurb: "" };
-  }
-
-  function issueById(id) {
-    for (var i = 0; i < DATA.issues.length; i++) {
-      if (DATA.issues[i].issue.id === id) return DATA.issues[i];
-    }
-    return DATA.issues[0];
-  }
-
-  /* 号の中の記事を「言語 → コーナー」の誌面順に並べる（ページ送りに使う） */
-  function orderedArticles(bundle) {
-    var order = {};
-    DATA.sections.forEach(function (s, i) { order[s.id] = i; });
-    return bundle.articles.slice().sort(function (a, b) {
-      var la = DATA.languages.indexOf(a.metadata.language);
-      var lb = DATA.languages.indexOf(b.metadata.language);
-      if (la !== lb) return la - lb;
-      return order[a.metadata.section] - order[b.metadata.section];
-    });
-  }
-
-  /* ── 原文の組み立て（語注ハイライト＋ピンインのルビ） ───────── */
-
-  /** 語注の surface が原文のどこに掛かるかを求める。長い語を優先し、重なりは捨てる。 */
-  function highlightRanges(original, words) {
-    var ranges = [];
-    words.map(function (w, i) { return { w: w, i: i }; })
-      .sort(function (a, b) {
-        return (b.w.surface || b.w.word).length - (a.w.surface || a.w.word).length;
-      })
-      .forEach(function (item) {
-        var needle = item.w.surface || item.w.word;
-        var at = -1;
-        // すでに確保した範囲と重ならない最初の出現を探す
-        for (var from = 0; from <= original.length - needle.length; from++) {
-          var found = original.indexOf(needle, from);
-          if (found === -1) break;
-          var clash = ranges.some(function (r) {
-            return found < r.end && found + needle.length > r.start;
-          });
-          if (!clash) { at = found; break; }
-          from = found;
-        }
-        if (at !== -1) ranges.push({ start: at, end: at + needle.length, index: item.i, word: item.w });
-      });
-    return ranges.sort(function (a, b) { return a.start - b.start; });
-  }
-
-  /** 1文字ぶんのノード。中国語ならルビ付き。 */
-  function charNode(ch, reading) {
-    if (!reading) return document.createTextNode(ch);
-    return el("ruby", {}, [ch, el("rt", { text: reading })]);
-  }
-
-  function renderOriginal(seg, lang) {
-    var text = seg.original || "";
-    var ruby = seg.ruby || null;
-    var ranges = highlightRanges(text, seg.words || []);
-    var frag = document.createDocumentFragment();
-    var pos = 0;
-
-    function emit(target, from, to) {
-      for (var i = from; i < to; i++) {
-        target.appendChild(charNode(text[i], ruby ? (ruby[i] ? ruby[i][1] : "") : ""));
+  // ---------- 保存（localStorage が使えない環境でも動くように） ----------
+  const store = {
+    get(k, def) {
+      try {
+        const v = localStorage.getItem(`level1.${k}`);
+        return v ? JSON.parse(v) : def;
+      } catch (e) {
+        return def;
       }
-    }
+    },
+    set(k, v) {
+      try {
+        localStorage.setItem(`level1.${k}`, JSON.stringify(v));
+      } catch (e) { /* 保存できなくても画面は動かす */ }
+    },
+  };
 
-    ranges.forEach(function (r) {
-      emit(frag, pos, r.start);
-      var btn = el("button", {
-        type: "button", class: "w", "data-gloss": String(r.index),
-        "aria-label": (r.word.surface || r.word.word) + "の語義を見る"
-      });
-      emit(btn, r.start, r.end);
-      frag.appendChild(btn);
-      pos = r.end;
-    });
-    emit(frag, pos, text.length);
+  let S = { ...window.Plan.DEFAULTS, ...store.get('settings', {}) };
+  let done = store.get('done', {});
+  let fixed = store.get('fixed', {});
+  let srs = store.get('srs', {});
+  let drafts = store.get('drafts', {});
+  let R = build(S, done);
+  const IDIOMS = idiomList();
+  const TRANS = translationList();
 
-    var p = el("p", { class: "original", lang: lang });
-    p.appendChild(el("span", { class: "seg-no", text: String(seg.id) }));
-    p.appendChild(frag);
-    return p;
+  const saveSettings = () => { store.set('settings', S); R = build(S, done); };
+
+  // 過去問・チェックポイント・語彙カードは study.js
+  const ST = window.Study({
+    app, store, toast: (m) => toast(m), esc: (x) => esc(x), todayS: () => todayS(), addDays: (k, n) => addDays(k, n),
+    LEFT: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+    RIGHT: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>',
+    IDIOMS, toS, toT, S: () => S, checkpointDays: () => window.Plan.checkpointDays({ ...window.Plan.DEFAULTS, ...S, rest: (S.rest || []).map(Number) }, R.P),
+    setShift: (d) => { S.inputShift = d; saveSettings(); },
+  });
+
+  // ---------- 小物 ----------
+  const pad = (n) => String(n).padStart(2, '0');
+  const todayS = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const addDays = (k, n) => toS(toT(k) + n * DAY);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const fmt = (k) => { const d = new Date(toT(k)); return `${WD[d.getUTCDay()]}, ${MON[d.getUTCMonth()]} ${d.getUTCDate()}`; };
+  const hm = (m) => (m >= 60 ? `${Math.floor(m / 60)}h ${pad(m % 60)}m` : `${m}m`);
+  const CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const LEFT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+  const RIGHT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+
+  function toast(msg) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2300);
   }
 
-  /* ── 表紙＋目次 ──────────────────────────────── */
-
-  function renderCover(bundle) {
-    var info = bundle.issue;
-    var wrap = el("div", { class: "cover" });
-
-    wrap.appendChild(el("p", { class: "cover-issue", text: info.label + " ・ 第" + info.id.split("-W")[1] + "号" }));
-    wrap.appendChild(el("p", { class: "cover-dates", text: info.dates }));
-    wrap.appendChild(el("h1", { class: "cover-title", text: info.coverTitle || info.label }));
-    if (info.coverCopy) wrap.appendChild(el("p", { class: "cover-copy", text: info.coverCopy }));
-    wrap.appendChild(el("hr", { class: "cover-rule" }));
-
-    if (info.worldRoundup && info.worldRoundup.length) {
-      wrap.appendChild(el("h2", { text: "今週の4か国" }));
-      var grid = el("div", { class: "roundup" });
-      info.worldRoundup.forEach(function (r) {
-        grid.appendChild(el("div", { class: "roundup-item", "data-lang": r.language }, [
-          el("h3", { text: (r.flag || FLAG[r.language] || "") + " " + r.country }),
-          el("p", { text: r.text })
-        ]));
-      });
-      wrap.appendChild(grid);
-    }
-
-    if (info.editorNote) {
-      wrap.appendChild(el("p", { class: "editor-note" }, [
-        el("strong", { text: "編集室から　" }), info.editorNote
-      ]));
-    }
-    return wrap;
+  // ---------- 進捗の計算 ----------
+  const taskDone = (t) => (t.fixed ? !!fixed[t.fixed] : t.ids.every((id) => done[id]));
+  const tasksOf = (k) => R.days.get(k) || [];
+  function dayRatio(k) {
+    const ts = tasksOf(k);
+    return ts.length ? ts.filter(taskDone).length / ts.length : null;
   }
-
-  var filters = { level: null, kind: null };
-
-  function renderToc(bundle) {
-    var wrap = el("div", { class: "toc" });
-    wrap.appendChild(el("h2", { text: "目次" }));
-
-    var bar = el("div", { class: "filters" });
-    bar.appendChild(el("span", { class: "filter-label", text: "レベル" }));
-    ["初級", "中級", "上級"].forEach(function (lv) {
-      bar.appendChild(el("button", {
-        type: "button", class: "chip", "data-filter": "level", "data-value": lv,
-        "aria-pressed": String(filters.level === lv), text: lv
-      }));
-    });
-    bar.appendChild(el("span", { class: "filter-label", text: "　種別" }));
-    [["news", "ニュース"], ["dialogue", "会話"], ["blog", "読み物"], ["buzzword", "語彙"]].forEach(function (k) {
-      bar.appendChild(el("button", {
-        type: "button", class: "chip", "data-filter": "kind", "data-value": k[0],
-        "aria-pressed": String(filters.kind === k[0]), text: k[1]
-      }));
-    });
-    wrap.appendChild(bar);
-
-    var shown = 0;
-    DATA.languages.forEach(function (lang) {
-      var arts = orderedArticles(bundle).filter(function (a) {
-        var m = a.metadata;
-        if (m.language !== lang) return false;
-        if (filters.level && m.level !== filters.level) return false;
-        if (filters.kind && KIND_NAME[m.kind] !== KIND_NAME[filters.kind]) return false;
-        return true;
-      });
-      if (!arts.length) return;
-      shown += arts.length;
-
-      var block = el("div", { class: "country-block", "data-lang": lang });
-      block.appendChild(el("div", { class: "country-head" }, [
-        el("span", { class: "flag", text: FLAG[lang] }),
-        el("h2", { text: arts[0].metadata.country }),
-        el("span", { class: "lang-tag", text: LANG_NAME[lang] })
-      ]));
-
-      var grid = el("div", { class: "card-grid" });
-      arts.forEach(function (a) {
-        var m = a.metadata;
-        var info = sectionInfo(m.section);
-        grid.appendChild(el("a", {
-          class: "card", href: "#/" + m.issue + "/" + m.language + "/" + m.section
-        }, [
-          el("span", { class: "card-section", text: info.name }),
-          el("h3", { class: "card-title", text: m.titleJa }),
-          el("span", { class: "card-title-orig", lang: m.language, text: m.title }),
-          el("span", { class: "card-meta" }, [
-            el("span", { class: "badge", text: m.category }),
-            el("span", { class: "badge badge-level", text: m.level }),
-            el("span", { class: "badge", text: KIND_NAME[m.kind] || m.kind })
-          ])
-        ]));
-      });
-      block.appendChild(grid);
-      wrap.appendChild(block);
-    });
-
-    if (!shown) wrap.appendChild(el("p", { class: "empty", text: "条件に合う記事がありません。" }));
-    return wrap;
-  }
-
-  /* ── 記事 ───────────────────────────────────── */
-
-  function renderGloss(seg, lang) {
-    var box = el("div", { class: "gloss" });
-    if ((seg.words || []).length) {
-      box.appendChild(el("p", { class: "gloss-head", text: "語 注" }));
-      seg.words.forEach(function (w, i) {
-        box.appendChild(el("p", { class: "gloss-item", "data-gloss": String(i) }, [
-          el("span", { class: "term", lang: lang, text: w.word }),
-          w.reading ? el("span", { class: "reading", text: w.reading }) : null,
-          el("span", { class: "pos", text: w.pos }),
-          el("span", { class: "mean", text: w.meaning })
-        ]));
-      });
-    }
-    if (seg.grammar) {
-      box.appendChild(el("div", { class: "grammar" }, [
-        el("p", { class: "gloss-head", text: "文 法" }),
-        el("p", { text: seg.grammar })
-      ]));
-    }
-    return box;
-  }
-
-  function renderSegments(art) {
-    var lang = art.metadata.language;
-    var wrap = el("div", { class: "segments" });
-    art.segments.forEach(function (seg) {
-      var body = el("div", { class: "seg-body" });
-      if (seg.speaker) body.appendChild(el("p", { class: "speaker", text: seg.speaker }));
-      body.appendChild(renderOriginal(seg, lang));
-      if (seg.pinyin) body.appendChild(el("p", { class: "pinyin-line", text: seg.pinyin }));
-      body.appendChild(el("p", { class: "translation", text: seg.translation }));
-
-      wrap.appendChild(el("div", { class: "segment", id: "s" + seg.id }, [body, renderGloss(seg, lang)]));
-    });
-    return wrap;
-  }
-
-  function renderEntries(art) {
-    var lang = art.metadata.language;
-    var wrap = el("div", { class: "entries" });
-    art.entries.forEach(function (e) {
-      wrap.appendChild(el("div", { class: "entry" }, [
-        el("p", { class: "entry-term", lang: lang }, [
-          e.term,
-          e.reading ? el("span", { class: "entry-reading", text: " " + e.reading }) : null
-        ]),
-        el("p", { class: "entry-meaning", text: e.meaning }),
-        el("p", { class: "entry-note", text: e.note }),
-        el("div", { class: "entry-example" }, [
-          el("p", { class: "ex", lang: lang, text: e.example }),
-          el("p", { class: "ex-ja", text: e.exampleJa })
-        ])
-      ]));
-    });
-    return wrap;
-  }
-
-  /** 文法コーナーの例文。原語・ピンイン・訳を必ず縦に並べる。 */
-  function exampleNode(ex, lang) {
-    return el("li", { class: "ex-item" }, [
-      el("p", { class: "ex-text", lang: lang, text: ex.text }),
-      ex.reading ? el("p", { class: "ex-reading", text: ex.reading }) : null,
-      el("p", { class: "ex-ja", text: ex.ja }),
-      ex.note ? el("p", { class: "ex-note", text: ex.note }) : null
-    ]);
-  }
-
-  function renderLesson(art) {
-    var lang = art.metadata.language;
-    var L = art.lesson;
-    var wrap = el("div", { class: "lesson" });
-
-    wrap.appendChild(el("div", { class: "lesson-point" }, [
-      el("p", { class: "lesson-point-orig", lang: lang, text: L.point }),
-      el("p", { class: "lesson-point-ja", text: L.pointJa }),
-      el("p", { class: "lesson-summary", text: L.summary })
-    ]));
-
-    (L.blocks || []).forEach(function (b, i) {
-      var box = el("section", { class: "lesson-block" });
-      box.appendChild(el("h2", { class: "lesson-heading" }, [
-        el("span", { class: "lesson-num", text: String(i + 1) }), b.heading
-      ]));
-      box.appendChild(el("p", { class: "lesson-body", text: b.body }));
-      var list = el("ul", { class: "ex-list" });
-      (b.examples || []).forEach(function (ex) { list.appendChild(exampleNode(ex, lang)); });
-      box.appendChild(list);
-      wrap.appendChild(box);
-    });
-
-    if ((L.contrast || []).length) {
-      var c = el("section", { class: "lesson-block" });
-      c.appendChild(el("h2", { class: "lesson-heading", text: "見分ける" }));
-      L.contrast.forEach(function (row) {
-        c.appendChild(el("div", { class: "contrast" }, [
-          row.label ? el("p", { class: "contrast-label", text: row.label }) : null,
-          el("div", { class: "contrast-pair" }, [
-            el("div", {}, [
-              el("p", { class: "ex-text", lang: lang, text: row.a }),
-              row.aReading ? el("p", { class: "ex-reading", text: row.aReading }) : null,
-              el("p", { class: "ex-ja", text: row.aJa })
-            ]),
-            el("div", {}, [
-              el("p", { class: "ex-text", lang: lang, text: row.b }),
-              row.bReading ? el("p", { class: "ex-reading", text: row.bReading }) : null,
-              el("p", { class: "ex-ja", text: row.bJa })
-            ])
-          ]),
-          el("p", { class: "contrast-note", text: row.note })
-        ]));
-      });
-      wrap.appendChild(c);
-    }
-
-    if ((L.mistakes || []).length) {
-      var m = el("section", { class: "lesson-block" });
-      m.appendChild(el("h2", { class: "lesson-heading", text: "ありがちな誤り" }));
-      L.mistakes.forEach(function (row) {
-        m.appendChild(el("div", { class: "mistake" }, [
-          el("p", { class: "mistake-wrong", lang: lang }, [
-            el("span", { class: "xmark", text: "✕" }), row.wrong
-          ]),
-          el("p", { class: "mistake-right", lang: lang }, [
-            el("span", { class: "omark", text: "○" }), row.right
-          ]),
-          el("p", { class: "ex-ja", text: row.rightJa }),
-          el("p", { class: "mistake-note", text: row.note })
-        ]));
-      });
-      wrap.appendChild(m);
-    }
-
-    wrap.appendChild(el("p", { class: "lesson-pitfall" }, [
-      el("strong", { text: "つまずきやすい点" }), L.pitfall
-    ]));
-
-    return wrap;
-  }
-
-  function renderVocabTable(art) {
-    var lang = art.metadata.language;
-    var rows = [];
-    (art.segments || []).forEach(function (seg) {
-      (seg.words || []).forEach(function (w) { rows.push(w); });
-    });
-    if (!rows.length) return null;
-
-    var body = el("tbody");
-    rows.forEach(function (w) {
-      body.appendChild(el("tr", {}, [
-        el("td", { class: "t", lang: lang, text: w.word }),
-        w.reading ? el("td", { text: w.reading }) : null,
-        el("td", { text: w.pos }),
-        el("td", { text: w.meaning })
-      ]));
-    });
-
-    var head = el("tr", {}, [
-      el("th", { text: "語" }),
-      lang === "zh" ? el("th", { text: "ピンイン" }) : null,
-      el("th", { text: "品詞" }),
-      el("th", { text: "意味" })
-    ]);
-
-    return el("div", {}, [
-      el("h2", { class: "block-head", text: "この記事の語彙 (" + rows.length + ")" }),
-      el("div", { class: "table-wrap" }, [
-        el("table", { class: "vocab-table" }, [el("thead", {}, [head]), body])
-      ])
-    ]);
-  }
-
-  function renderArticle(bundle, art) {
-    var m = art.metadata;
-    var info = sectionInfo(m.section);
-    var ordered = orderedArticles(bundle);
-    var idx = ordered.indexOf(art);
-
-    var wrap = el("article", { class: "article", "data-lang": m.language });
-
-    wrap.appendChild(el("div", { class: "section-banner" }, [
-      el("span", { class: "flag", text: FLAG[m.language] }),
-      el("span", { class: "name", text: info.name }),
-      el("span", { class: "blurb", text: info.blurb }),
-      el("span", { class: "page-no", text: m.country + " ・ " + bundle.issue.label })
-    ]));
-
-    var head = el("div", { class: "article-head" });
-    head.appendChild(el("h1", { class: "article-title", text: m.titleJa }));
-    head.appendChild(el("p", { class: "article-title-orig", lang: m.language, text: m.title }));
-    if (m.leadJa) head.appendChild(el("p", { class: "lead", text: m.leadJa }));
-    head.appendChild(el("div", { class: "article-meta" }, [
-      el("span", { class: "badge", text: m.category }),
-      el("span", { class: "badge badge-level", text: m.level }),
-      el("span", { class: "badge", text: KIND_NAME[m.kind] || m.kind }),
-      el("span", { class: "badge", text: m.publishDate })
-    ]));
-    wrap.appendChild(head);
-
-    if (m.language === "zh") {
-      var tools = el("div", { class: "reading-tools" });
-      tools.appendChild(el("button", {
-        type: "button", class: "chip", id: "ruby-toggle",
-        "aria-pressed": String(rubyOn()), text: "ピンイン" + (rubyOn() ? "を隠す" : "を表示")
-      }));
-      wrap.appendChild(tools);
-    }
-
-    if (art.lesson) wrap.appendChild(renderLesson(art));
-    else if (art.entries) wrap.appendChild(renderEntries(art));
-    else wrap.appendChild(renderSegments(art));
-
-    if (m.trivia) {
-      wrap.appendChild(el("p", { class: "trivia" }, [
-        el("strong", { text: "豆 知 識" }), m.trivia
-      ]));
-    }
-
-    var table = renderVocabTable(art);
-    if (table) wrap.appendChild(table);
-
-    var srcs = m.sources || (m.sourceUrl ? [{ name: m.source, url: m.sourceUrl }] : []);
-    if (srcs.length) {
-      var list = el("ul");
-      srcs.forEach(function (s) {
-        list.appendChild(el("li", {}, [
-          el("a", { href: s.url, target: "_blank", rel: "noopener noreferrer", text: s.name }),
-          " — " + s.url
-        ]));
-      });
-      wrap.appendChild(el("div", { class: "sources" }, [
-        el("h2", { class: "block-head", text: "出典" }),
-        el("p", { text: "原文の引用は各社が配信目的で公開している見出しと要約によります。著作権は各報道機関に帰属します。" }),
-        list
-      ]));
-    } else {
-      wrap.appendChild(el("div", { class: "sources" }, [
-        el("p", { text: "この記事は今週の話題をもとにした本誌の書き下ろしです。" })
-      ]));
-    }
-
-    var pager = el("div", { class: "pager" });
-    [[-1, "前の記事"], [1, "次の記事"]].forEach(function (p) {
-      var other = ordered[idx + p[0]];
-      if (!other) { pager.appendChild(el("span")); return; }
-      var om = other.metadata;
-      pager.appendChild(el("a", {
-        href: "#/" + om.issue + "/" + om.language + "/" + om.section,
-        style: p[0] > 0 ? "text-align:right" : null
-      }, [
-        el("span", { class: "dir", text: p[1] }),
-        FLAG[om.language] + " " + om.titleJa
-      ]));
-    });
-    wrap.appendChild(pager);
-
-    return wrap;
-  }
-
-  /* ── 語義ポップと欄外の連動 ───────────────────── */
-
-  var openPop = null;
-
-  function closePop() {
-    if (openPop) { openPop.remove(); openPop = null; }
-    var prev = document.querySelector(".w.is-open");
-    if (prev) prev.classList.remove("is-open");
-    Array.prototype.forEach.call(document.querySelectorAll(".gloss-item.is-lit"), function (n) {
-      n.classList.remove("is-lit");
-    });
-  }
-
-  function openGloss(btn) {
-    var segment = btn.closest(".segment");
-    var i = btn.getAttribute("data-gloss");
-    var wasOpen = btn.classList.contains("is-open");
-    closePop();
-    if (wasOpen) return;
-
-    btn.classList.add("is-open");
-    Array.prototype.forEach.call(segment.querySelectorAll('.gloss-item[data-gloss="' + i + '"]'), function (n) {
-      n.classList.add("is-lit");
-    });
-
-    var item = segment.querySelector('.gloss-item[data-gloss="' + i + '"]');
-    if (!item) return;
-
-    var term = item.querySelector(".term");
-    var reading = item.querySelector(".reading");
-    var pop = el("div", { class: "popover", role: "status" }, [
-      el("span", { class: "term", lang: term.getAttribute("lang"), text: term.textContent }),
-      reading ? el("span", { class: "reading", text: " " + reading.textContent }) : null,
-      el("span", { class: "pos", text: " " + item.querySelector(".pos").textContent }),
-      el("br"),
-      item.querySelector(".mean").textContent
-    ]);
-    document.body.appendChild(pop);
-
-    // ボタンのすぐ下に出す。右端と下端からはみ出さないよう寄せる。
-    var r = btn.getBoundingClientRect();
-    var top = window.scrollY + r.bottom + 6;
-    var left = window.scrollX + r.left;
-    left = Math.min(left, window.scrollX + document.documentElement.clientWidth - pop.offsetWidth - 12);
-    pop.style.top = top + "px";
-    pop.style.left = Math.max(window.scrollX + 8, left) + "px";
-    openPop = pop;
-  }
-
-  /* ── ピンイン表示の記憶 ──────────────────────── */
-
-  function store(key, value) {
-    try {
-      if (value === undefined) return localStorage.getItem(key);
-      localStorage.setItem(key, value);
-    } catch (e) { /* プライベートウィンドウなどでは保存しない */ }
-    return null;
-  }
-
-  function rubyOn() { return store("newstext:ruby") !== "off"; }
-
-  function applyRuby() {
-    document.body.classList.toggle("no-ruby", !rubyOn());
-  }
-
-  /* ── テーマ ─────────────────────────────────── */
-
-  function applyTheme() {
-    var t = store("newstext:theme");
-    if (t) document.documentElement.setAttribute("data-theme", t);
-  }
-
-  /* ── ルーティング ───────────────────────────── */
-
-  function parseHash() {
-    var parts = (location.hash || "").replace(/^#\/?/, "").split("/").filter(Boolean);
-    return { issue: parts[0] || null, lang: parts[1] || null, section: parts[2] || null };
-  }
-
-  function render() {
-    closePop();
-    var route = parseHash();
-    var bundle = route.issue ? issueById(route.issue) : DATA.issues[0];
-    app.innerHTML = "";
-
-    if (route.lang && route.section) {
-      var found = null;
-      bundle.articles.forEach(function (a) {
-        if (a.metadata.language === route.lang && a.metadata.section === route.section) found = a;
-      });
-      if (found) {
-        document.title = found.metadata.titleJa + " — NEWSTEXT " + bundle.issue.label;
-        app.appendChild(renderArticle(bundle, found));
-        window.scrollTo(0, 0);
-        return;
-      }
-      app.appendChild(el("p", { class: "empty", text: "記事が見つかりません。" }));
+  function toggle(t) {
+    if (t.fixed) {
+      if (fixed[t.fixed]) delete fixed[t.fixed];
+      else fixed[t.fixed] = 1;
+      store.set('fixed', fixed);
       return;
     }
+    const all = taskDone(t);
+    const now = todayS();
+    t.ids.forEach((id) => {
+      if (all) delete done[id];
+      else if (!done[id]) done[id] = now;
+    });
+    store.set('done', done);
+  }
+  function streak() {
+    let n = 0;
+    let k = todayS();
+    if (dayRatio(k) !== 1) k = addDays(k, -1);
+    for (let i = 0; i < 800; i++, k = addDays(k, -1)) {
+      const r = dayRatio(k);
+      if (r === null) { if (k < S.start) break; continue; }
+      if (r < 1) break;
+      n++;
+    }
+    return n;
+  }
+  function allIds() {
+    const ids = [];
+    R.tracks.forEach((tr) => tr.units.forEach((u) => (tr.pair ? ids.push(`${u.id}-w`, `${u.id}-l`) : ids.push(u.id))));
+    return ids;
+  }
+  function overall() {
+    const ids = allIds();
+    return ids.length ? ids.filter((id) => done[id]).length / ids.length : 0;
+  }
+  function overdue() {
+    const today = todayS();
+    let n = 0;
+    R.days.forEach((ts, k) => {
+      if (k < today) ts.forEach((t) => { if (!t.fixed && !taskDone(t)) n++; });
+    });
+    return n;
+  }
+  function rebalance() {
+    const k = todayS();
+    S.anchors = [...new Set([...(S.anchors || []), k])].sort();
+    saveSettings();
+    toast('Rebalanced');
+  }
 
-    document.title = "NEWSTEXT " + bundle.issue.label + " — 週刊 多言語ニュースマガジン";
-    app.appendChild(renderCover(bundle));
-    app.appendChild(renderToc(bundle));
+  // ---------- Today ----------
+  function viewToday(k) {
+    const today = todayS();
+    k = k || today;
+    const tasks = [...tasksOf(k), ...ST.focusTasks(k), ...ST.extraTasks(k)];
+    const left = Math.max(0, Math.round((toT(S.exam) - toT(today)) / DAY));
+    const pct = Math.round(overall() * 100);
+    const C = 2 * Math.PI * 42;
+    const ph = R.P.find((p) => toT(k) >= p.a && toT(k) < p.b);
+    const total = tasks.reduce((s, t) => s + t.min, 0);
+    const od = k === today ? overdue() : 0;
+    const allDone = tasks.length && tasks.every(taskDone);
+    const cpDays = window.Plan.checkpointDays({ ...window.Plan.DEFAULTS, ...S, rest: (S.rest || []).map(Number) }, R.P);
+    const nextCp = cpDays.findIndex((t) => toS(t) >= today);
+
+    app.innerHTML = `
+      <div class="today-view">
+      <aside class="t-side">
+      <div class="daynav">
+        <button data-go="${addDays(k, -1)}" aria-label="Previous day">${LEFT}</button>
+        <div class="date">${fmt(k)}${k === today ? '<small>Today</small>' : `<small><a href="#/today">Back to today</a></small>`}</div>
+        <button data-go="${addDays(k, 1)}" aria-label="Next day">${RIGHT}</button>
+      </div>
+      <div class="hero">
+        <div>
+          <div class="count">${left}</div>
+          <div class="label count-unit">days to exam</div>
+        </div>
+        <div class="ring" role="img" aria-label="${pct}% complete">
+          <svg viewBox="0 0 96 96"><circle class="track" cx="48" cy="48" r="42"/><circle class="bar" cx="48" cy="48" r="42" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct / 100)}"/></svg>
+          <div class="val"><b>${pct}%</b><span>TOTAL</span></div>
+        </div>
+      </div>
+      <div class="stats">
+        ${ph ? `<span class="chip">${ph.id} · ${ph.name}</span>` : ''}
+        ${total ? `<span class="chip">${hm(total)}</span>` : ''}
+        <span class="chip">Streak ${streak()}</span>
+        ${nextCp >= 0 ? `<a class="chip" href="#/check/${nextCp}">CP${nextCp} · ${fmt(toS(cpDays[nextCp]))}</a>` : ''}
+        ${od ? `<button class="chip accent" id="rebalance">${od} overdue · Rebalance</button>` : ''}
+      </div>
+      </aside>
+      <section class="t-main">
+      ${tasks.length ? `<div class="tasks">${tasks.map(taskHTML).join('')}</div>` : `<div class="empty">${k >= S.exam ? 'Exam day.' : 'Rest.'}</div>`}
+      ${allDone ? `<div class="complete"><span class="seal">完</span><div class="word">Done.</div></div>` : ''}
+      </section>
+      </div>
+    `;
+
+    app.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { location.hash = `#/today/${b.dataset.go}`; }));
+    const rb = app.querySelector('#rebalance');
+    if (rb) rb.addEventListener('click', () => { rebalance(); viewToday(k); });
+    app.querySelectorAll('.task').forEach((el) => {
+      el.querySelector('.stamp').addEventListener('click', () => {
+        const t = tasks[+el.dataset.i];
+        const was = taskDone(t);
+        toggle(t);
+        viewToday(k);
+        if (!was) app.querySelector(`.task[data-i="${el.dataset.i}"]`).classList.add('just');
+      });
+    });
+  }
+
+  function taskHTML(t, i) {
+    const link = ST.taskLink(t) || (t.track === 'idioms' || t.track === 'idrev' ? '#/idioms'
+      : /^tr/.test(t.track) ? `#/translate/${t.units[0]}` : '');
+    const dyn = ST.taskMeta(t);
+    return `
+      <div class="task ${taskDone(t) ? 'done' : ''}" data-i="${i}">
+        <button class="stamp" aria-label="Mark done">${CHECK}</button>
+        <div class="body">
+          <div class="name"><b>${esc(t.name)}</b><span class="min">${t.min} min</span></div>
+          ${t.lines.map((l) => `
+            <div class="line"><span class="head">${esc(l.head)}</span><span class="meta">${esc(dyn || l.meta)}</span></div>
+            ${l.notes.length ? `<ul class="notes">${l.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}`).join('')}
+          ${link ? `<a class="go" href="${link}">Open →</a>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // ---------- Plan ----------
+  function viewPlan(k) {
+    const today = todayS();
+    k = k || today;
+    const mon = addDays(k, -((dow(toT(k)) + 6) % 7));
+    const week = Array.from({ length: 7 }, (_, i) => addDays(mon, i));
+
+    const start = new Date(toT(S.start));
+    const end = new Date(toT(S.exam));
+    const months = [];
+    for (let y = start.getUTCFullYear(), m = start.getUTCMonth(); y < end.getUTCFullYear() || (y === end.getUTCFullYear() && m <= end.getUTCMonth()); m === 11 ? (y++, m = 0) : m++) months.push([y, m]);
+
+    app.innerHTML = `
+      <div class="daynav">
+        <button data-go="${addDays(mon, -7)}" aria-label="Previous week">${LEFT}</button>
+        <div class="date">${MON[new Date(toT(mon)).getUTCMonth()]} ${new Date(toT(mon)).getUTCDate()} – ${MON[new Date(toT(week[6])).getUTCMonth()]} ${new Date(toT(week[6])).getUTCDate()}<small>Week</small></div>
+        <button data-go="${addDays(mon, 7)}" aria-label="Next week">${RIGHT}</button>
+      </div>
+      <div class="week">${week.map((d) => {
+        const ts = tasksOf(d);
+        const r = dayRatio(d);
+        const dt = new Date(toT(d));
+        return `<a class="wday ${d === today ? 'today' : ''}" href="#/today/${d}">
+          <div class="d"><b>${dt.getUTCDate()}</b><span>${WD[dt.getUTCDay()]}</span></div>
+          <div class="ts">${ts.length ? ts.filter((t) => !t.fixed).map((t) => `<b>${esc(t.name)}</b> ${esc(t.lines[0] ? t.lines[0].head : '')}`).join(' · ') || 'Journal' : (d === S.exam ? '<b>Exam</b>' : d < S.start || d > S.exam ? '—' : 'Rest')}</div>
+          <div class="pct">${r === null ? '' : `${Math.round(r * 100)}%`}</div>
+        </a>`;
+      }).join('')}</div>
+
+      <h2 class="section label">Year</h2>
+      <div class="months">${months.map(([y, m]) => monthHTML(y, m, today)).join('')}</div>
+      <div class="legend">Less <span class="cell"></span><span class="cell l1"></span><span class="cell l2"></span><span class="cell l3"></span><span class="cell l4"></span> More</div>
+    `;
+    app.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { location.hash = `#/plan/${b.dataset.go}`; }));
+  }
+
+  function monthHTML(y, m, today) {
+    const first = Date.UTC(y, m, 1);
+    const n = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    const off = (new Date(first).getUTCDay() + 6) % 7;
+    let cells = '<span class="cell blank"></span>'.repeat(off);
+    for (let d = 1; d <= n; d++) {
+      const k = toS(Date.UTC(y, m, d));
+      let cls = 'cell';
+      if (k === S.exam) cls += ' exam';
+      else if (k < S.start || k > S.exam) cls += ' blank';
+      else if (!tasksOf(k).length) cls += ' rest';
+      else if (k > today) cls += ' future';
+      else {
+        const r = dayRatio(k);
+        cls += r === 0 ? '' : r < 0.34 ? ' l1' : r < 0.67 ? ' l2' : r < 1 ? ' l3' : ' l4';
+      }
+      if (k === today) cls += ' today';
+      cells += cls.includes('blank') ? `<span class="${cls}"></span>` : `<a class="${cls}" href="#/today/${k}" title="${k}"></a>`;
+    }
+    return `<div class="month"><h4>${MON[m]} ${y}</h4><div class="grid7">${cells}</div></div>`;
+  }
+
+  // ---------- Progress ----------
+  const CATS = [
+    ['Errors I', (id) => /^e1-/.test(id)],
+    ['Errors II', (id) => /^e2-/.test(id)],
+    ['Errors III', (id) => /^e3-/.test(id)],
+    ['Training Book', (id) => /^tb-/.test(id)],
+    ['Kikutan', (id) => /^kk-/.test(id)],
+    ['HSK 7–9', (id) => /^hsk-/.test(id)],
+    ['Idioms', (id) => /^id-/.test(id)],
+    ['Translate', (id) => /^tr-/.test(id)],
+    ['Errors · Review', (id) => /^re\d/.test(id)],
+    ['Kikutan · Review', (id) => /^kk2-/.test(id)],
+    ['Past Papers', (id) => /^pp/.test(id)],
+    ['Translate · Redo', (id) => /^trr-/.test(id)],
+  ];
+
+  function viewProgress() {
+    const today = todayS();
+    const ids = allIds();
+    const due = new Set();
+    R.days.forEach((ts, k) => { if (k <= today) ts.forEach((t) => (t.ids || []).forEach((id) => due.add(id))); });
+    const a = toT(S.start);
+    const span = toT(S.exam) - a;
+    const past = Math.min(1, Math.max(0, (toT(today) - a) / span));
+    let studied = 0;
+    let minutes = 0;
+    R.days.forEach((ts, k) => {
+      if (k > today) return;
+      const d = ts.filter(taskDone);
+      if (d.length) studied++;
+      d.forEach((t) => { minutes += t.min; });
+    });
+
+    app.innerHTML = `
+      <div class="hero p-hero">
+        <div><div class="count">${Math.round(overall() * 100)}<span style="font-size:.4em">%</span></div><div class="label count-unit">complete</div></div>
+        <div style="text-align:right">
+          <div class="serif" style="font-size:28px;font-weight:700">${studied}</div><div class="label">days</div>
+          <div class="serif" style="font-size:28px;font-weight:700;margin-top:8px">${Math.round(minutes / 60)}</div><div class="label">hours</div>
+        </div>
+      </div>
+      <div class="timeline">${R.P.map((p) => `<div style="width:${((p.b - p.a) / span) * 100}%"></div>`).join('')}<span class="past" style="width:${past * 100}%"></span></div>
+      <div class="phases">${R.P.map((p) => `<div style="width:${((p.b - p.a) / span) * 100}%"><b>${p.id}</b>${p.name}</div>`).join('')}</div>
+
+      <div class="dash"><div class="dcard">
+      <h2 class="section label">Books</h2>
+      <div class="bars">${CATS.map(([name, test]) => {
+        const mine = ids.filter(test);
+        if (!mine.length) return '';
+        const d = mine.filter((id) => done[id]).length;
+        const exp = mine.filter((id) => due.has(id)).length;
+        return `<div class="bar-row">
+          <div class="row"><span>${name}</span><span>${d} / ${mine.length}</span></div>
+          <div class="meter"><i style="width:${(d / mine.length) * 100}%"></i>${exp ? `<s style="left:calc(${(exp / mine.length) * 100}% - 1px)" title="Plan"></s>` : ''}</div>
+        </div>`;
+      }).join('')}</div>
+      <div class="legend" style="margin-top:18px"><span style="display:inline-block;width:2px;height:10px;background:var(--ink);opacity:.5"></span>&nbsp;plan</div>
+      </div><div class="dcard">${ST.progressHTML()}</div></div>
+    `;
+  }
+
+  // ---------- Idioms ----------
+  const INT = [1, 2, 4, 8, 16, 32, 64, 120];
+  let idMode = 'study';
+  let queue = null;
+  let reveal = false;
+  let query = '';
+
+  function buildQueue() {
+    const today = todayS();
+    const fresh = [];
+    R.days.forEach((ts, k) => {
+      if (k > today) return;
+      ts.forEach((t) => { if (t.track === 'idioms') t.units.forEach((n) => { if (!srs[n]) fresh.push(n); }); });
+    });
+    const dueList = Object.keys(srs).filter((n) => srs[n].due <= today).map(Number).sort((x, y) => srs[x].due.localeCompare(srs[y].due));
+    queue = [...dueList, ...fresh.slice(0, 20)];
+  }
+
+  function grade(n, ok) {
+    const today = todayS();
+    const cur = srs[n] || { b: -1 };
+    const b = ok ? Math.min(INT.length - 1, cur.b + 1) : 0;
+    srs[n] = { b, due: ok ? addDays(today, INT[b]) : today };
+    store.set('srs', srs);
+    if (!done[`id-${n}`]) { done[`id-${n}`] = today; store.set('done', done); }
+    queue.shift();
+    if (!ok) queue.push(n);
+    reveal = false;
+    viewIdioms();
+  }
+
+  function viewIdioms() {
+    if (!queue) buildQueue();
+    const today = todayS();
+    const dueN = Object.keys(srs).filter((n) => srs[n].due <= today).length;
+    const newN = queue.filter((n) => !srs[n]).length;
+    const head = `
+      <div class="row" style="margin:6px 0 4px">
+        <div class="seg">${[['study', 'Idioms'], ['vocab', 'Vocab'], ['hanzi', 'Hanzi'], ['groups', 'Groups'], ['all', 'All']].map(([m, l]) => `<button data-mode="${m}" class="${idMode === m ? 'on' : ''}">${l}</button>`).join('')}</div>
+        <span class="spacer"></span>
+        ${idMode === 'study' ? `<span class="chip">New ${newN}</span><span class="chip">Due ${dueN}</span>` : idMode === 'all' ? `<span class="chip">${IDIOMS.length}</span>` : idMode === 'hanzi' ? `<span class="chip">Due ${ST.hzCount()[0]}</span><span class="chip">${ST.hzCount()[1]}</span>` : ''}
+      </div>`;
+
+    if (idMode === 'vocab' || idMode === 'groups' || idMode === 'hanzi') {
+      ({ vocab: ST.viewVocab, groups: ST.viewGroups, hanzi: ST.viewHanzi })[idMode](app, head);
+      app.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { idMode = b.dataset.mode; location.hash = `#/idioms/${idMode}`; }));
+      return;
+    } else if (idMode === 'all') {
+      const q = query.trim().toLowerCase();
+      const list = IDIOMS.filter((x) => !q || [x.zh, x.py, x.ja].some((s) => s.toLowerCase().includes(q)));
+      app.innerHTML = `${head}
+        <input class="search" type="search" placeholder="Search" value="${esc(query)}" aria-label="Search">
+        <ul class="list">${list.map((x) => `<li><details>
+          <summary><span class="n">${x.n}</span><span class="zh">${esc(x.zh)}</span></summary>
+          <div class="detail"><p class="muted">${esc(x.py)} · ${esc(x.cat)}</p><p>${esc(x.ja)}</p><p class="serif">${esc(x.ex)}</p><p class="muted">${esc(x.exJa)}</p>${x.note ? `<div class="note">${esc(x.note)}</div>` : ''}</div>
+        </details></li>`).join('')}</ul>`;
+      const input = app.querySelector('.search');
+      input.addEventListener('input', () => {
+        query = input.value;
+        viewIdioms();
+        const again = app.querySelector('.search');
+        again.focus();
+        again.setSelectionRange(again.value.length, again.value.length);
+      });
+    } else if (!queue.length) {
+      app.innerHTML = `${head}<div class="complete"><span class="seal">完</span><div class="word">Done.</div></div>`;
+    } else {
+      const x = IDIOMS[queue[0] - 1];
+      app.innerHTML = `${head}
+        <div class="card" id="card" role="button" tabindex="0" aria-label="Reveal">
+          <span class="chip cat">#${x.n} · ${esc(x.cat)}</span>
+          <div class="zh">${esc(x.zh)}</div>
+          ${reveal ? `
+            <div class="py">${esc(x.py)}</div>
+            <div class="back">
+              <div class="ja">${esc(x.ja)}</div>
+              <div class="ex">${esc(x.ex)}</div>
+              <div class="exja">${esc(x.exJa)}</div>
+              ${x.note ? `<div class="note">${esc(x.note)}</div>` : ''}
+            </div>` : '<div class="tap">TAP</div>'}
+        </div>
+        ${reveal ? '<div class="grade"><button class="btn" data-g="0">Again</button><button class="btn primary" data-g="1">Good</button></div>' : ''}`;
+      const card = app.querySelector('#card');
+      const show = () => { if (!reveal) { reveal = true; viewIdioms(); } };
+      card.addEventListener('click', show);
+      card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(); } });
+      app.querySelectorAll('[data-g]').forEach((b) => b.addEventListener('click', () => grade(x.n, b.dataset.g === '1')));
+    }
+    app.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { idMode = b.dataset.mode; location.hash = `#/idioms/${idMode}`; }));
+  }
+
+  // ---------- Translate ----------
+  function viewTranslate(n) {
+    if (!n) {
+      app.innerHTML = `
+        <div class="row" style="margin:6px 0 10px"><span class="label">Translate</span><span class="spacer"></span><span class="chip">${TRANS.filter((x) => done[`tr-${x.n}`]).length} / ${TRANS.length}</span></div>
+        <div class="tlist">${TRANS.map((x) => `<a href="#/translate/${x.n}">
+          <span class="n">T${x.n}</span><span>${esc(x.dir)}</span><span class="muted">${esc(x.t)}</span>
+          <span class="dot ${done[`tr-${x.n}`] ? 'done' : drafts[x.n] ? 'draft' : ''}"></span>
+        </a>`).join('')}</div>`;
+      return;
+    }
+    const x = TRANS[n - 1];
+    if (!x) { location.hash = '#/translate'; return; }
+    const id = done[`tr-${n}`] ? `trr-${n}` : `tr-${n}`;
+    // 日文中訳は本番どおり手で書く（Pencil）。中文日訳は答えが日本語なのでキーボード
+    const zhOut = x.dir === 'JA → ZH';
+    let shown = false;
+    app.innerHTML = `
+      <div class="daynav">
+        <button data-go="${Math.max(1, n - 1)}" aria-label="Previous">${LEFT}</button>
+        <div class="date">T${n}<small>${esc(x.dir)} · ${esc(x.t)}</small></div>
+        <button data-go="${Math.min(TRANS.length, n + 1)}" aria-label="Next">${RIGHT}</button>
+      </div>
+      ${zhOut ? `<div class="row wbar lead">${ST.modeSwitch()}<span class="muted small">本番と同じく手で書く</span></div>` : ''}
+      <div class="split write">
+        <div class="pane-l"><div class="src">${esc(x.src)}</div><div id="tmodel"></div></div>
+        <div class="pane-r">
+          <div id="tin"></div>
+          <div class="actions">
+            <button class="btn" id="show">Show</button>
+            <span class="spacer"></span>
+            <button class="btn ${done[id] ? '' : 'accent'}" id="mark">${done[id] ? 'Undo' : 'Done'}</button>
+          </div>
+        </div>
+      </div>`;
+    const mount = () => ST.penInput(app.querySelector('#tin'), {
+      key: `tr|${n}|ink`, keyOnly: !zhOut, lang: zhOut ? 'zh-CN' : 'ja', fit: Math.ceil(window.Ink.chars(x.model).length * 1.3), tall: true,
+      text: () => drafts[n] || '', setText: (v) => { drafts[n] = v; store.set('drafts', drafts); }, placeholder: 'Your translation',
+    });
+    mount();
+    const wb = app.querySelector('.wbar');
+    if (wb) ST.bindModeSwitch(wb, mount);
+    app.querySelector('#show').addEventListener('click', (e) => {
+      shown = !shown;
+      e.target.textContent = shown ? 'Hide' : 'Show';
+      app.querySelector('#tmodel').innerHTML = shown ? `
+        <div class="label" style="margin-top:20px">Model</div>
+        ${zhOut ? ST.tapHTML(x.model, `T${n}`) : `<div class="src">${esc(x.model)}</div>`}
+        <div class="label">Points</div>
+        <ul class="pts">${x.pts.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>` : '';
+    });
+    app.querySelector('#mark').addEventListener('click', (e) => {
+      if (done[id]) delete done[id];
+      else done[id] = todayS();
+      store.set('done', done);
+      e.target.textContent = done[id] ? 'Undo' : 'Done';
+      e.target.classList.toggle('accent', !done[id]);
+    });
+    app.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { location.hash = `#/translate/${b.dataset.go}`; }));
+  }
+
+  // ---------- Settings ----------
+  function viewSettings() {
+    const theme = store.get('theme', 'system');
+    const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    app.innerHTML = `
+      <div class="label" style="margin:6px 0 16px">Settings</div>
+      <div class="form">
+        <label class="field"><span class="label">Start</span><input type="date" id="start" value="${S.start}"></label>
+        <label class="field"><span class="label">Exam</span><input type="date" id="exam" value="${S.exam}"></label>
+        <div class="field"><span class="label">Rest days</span>
+          <div class="dow">${DOW.map((d, i) => `<button type="button" data-d="${i}" class="${S.rest.includes(i) ? 'on' : ''}" aria-pressed="${S.rest.includes(i)}">${d}</button>`).join('')}</div></div>
+        <label class="field"><span class="label">Journal · min / day</span><input type="number" id="journal" min="10" max="180" step="5" value="${S.journal}"></label>
+        <label class="field"><span class="label">Input phase · extra days</span><input type="number" id="shift" min="0" max="42" step="7" value="${S.inputShift || 0}"></label>
+        <label class="field"><span class="label">Errors I · start page × 100</span><textarea id="e1" placeholder="1, 5, 9, …">${esc(S.e1Pages)}</textarea></label>
+        <div class="field"><span class="label">Theme</span>
+          <div class="seg">${['system', 'light', 'dark'].map((t) => `<button type="button" data-theme="${t}" class="${theme === t ? 'on' : ''}">${t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div></div>
+        <div class="field"><span class="label">Plan</span>
+          <div class="actions" style="margin:0"><button class="btn" id="rb">Rebalance from today</button>${(S.anchors || []).length ? '<button class="btn" id="unrb">Reset plan</button>' : ''}</div></div>
+        <div class="field"><span class="label">Data</span>
+          <div class="actions" style="margin:0"><button class="btn" id="export">Export</button><label class="btn">Import<input type="file" id="import" accept="application/json" hidden></label><button class="btn" id="wipe">Erase</button></div></div>
+      </div>`;
+
+    const bind = (sel, key, f = (v) => v) => app.querySelector(sel).addEventListener('change', (e) => {
+      S[key] = f(e.target.value);
+      saveSettings();
+      toast('Saved');
+    });
+    bind('#start', 'start');
+    bind('#exam', 'exam');
+    bind('#journal', 'journal', Number);
+    bind('#shift', 'inputShift', Number);
+    bind('#e1', 'e1Pages');
+    app.querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => {
+      const d = +b.dataset.d;
+      S.rest = S.rest.includes(d) ? S.rest.filter((x) => x !== d) : [...S.rest, d];
+      saveSettings();
+      viewSettings();
+    }));
+    app.querySelectorAll('[data-theme]').forEach((b) => b.addEventListener('click', () => {
+      store.set('theme', b.dataset.theme);
+      applyTheme();
+      viewSettings();
+    }));
+    app.querySelector('#rb').addEventListener('click', () => { rebalance(); viewSettings(); });
+    const un = app.querySelector('#unrb');
+    if (un) un.addEventListener('click', () => { S.anchors = []; saveSettings(); toast('Reset'); viewSettings(); });
+    app.querySelector('#export').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify({ settings: S, done, fixed, srs, drafts, study: ST.exportData() }, null, 1)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `level1-${todayS()}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    app.querySelector('#import').addEventListener('change', async (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      try {
+        const d = JSON.parse(await f.text());
+        S = { ...window.Plan.DEFAULTS, ...(d.settings || {}) };
+        done = d.done || {}; fixed = d.fixed || {}; srs = d.srs || {}; drafts = d.drafts || {};
+        store.set('done', done); store.set('fixed', fixed); store.set('srs', srs); store.set('drafts', drafts);
+        if (d.study) ST.importData(d.study);
+        saveSettings();
+        queue = null;
+        toast('Imported');
+        viewSettings();
+      } catch (err) {
+        toast('Invalid file');
+      }
+    });
+    app.querySelector('#wipe').addEventListener('click', () => {
+      if (!confirm('Erase all progress?')) return;
+      S = { ...window.Plan.DEFAULTS };
+      done = {}; fixed = {}; srs = {}; drafts = {};
+      ['done', 'fixed', 'srs', 'drafts'].forEach((k) => store.set(k, {}));
+      ST.importData({});
+      saveSettings();
+      queue = null;
+      toast('Erased');
+      viewSettings();
+    });
+  }
+
+  // ---------- ルーティング ----------
+  function applyTheme() {
+    const t = store.get('theme', 'system');
+    if (t === 'system') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = t;
+  }
+
+  function route() {
+    const [, view = 'today', arg, arg2] = location.hash.split('/');
+    const tab = { check: 'today', drill: 'today', method: 'papers', guide: 'papers' }[view] || view;
+    document.querySelectorAll('.tabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
+    app.dataset.view = view;
+    const sc = document.getElementById('sidecount');
+    if (sc) sc.textContent = Math.max(0, Math.round((toT(S.exam) - toT(todayS())) / DAY));
+    if (view !== 'idioms') { queue = null; reveal = false; }
+    if (route.last !== location.hash) { ST.stop(); if (!(view === 'check' && arg2 === 'result')) ST.resetSession(); }
+    route.last = location.hash;
+    if (view === 'plan') viewPlan(arg);
+    else if (view === 'idioms') { idMode = ['vocab', 'hanzi', 'groups', 'all'].includes(arg) ? arg : 'study'; viewIdioms(); }
+    else if (view === 'papers') {
+      if (!arg) ST.viewPapers();
+      else if (arg === 'review') ST.viewReview();
+      else if (arg2) ST.viewSection(arg, arg2);
+      else ST.viewPaper(arg);
+    } else if (view === 'check') { if (arg2 === 'result') ST.viewCheckResult(arg); else ST.viewCheck(arg); }
+    else if (view === 'drill') ST.viewDrill(arg);
+    else if (view === 'method') ST.viewMethod();
+    else if (view === 'guide') ST.viewGuide();
+    else if (view === 'translate') viewTranslate(arg ? +arg : 0);
+    else if (view === 'progress') viewProgress();
+    else if (view === 'settings') viewSettings();
+    else viewToday(arg);
     window.scrollTo(0, 0);
   }
 
-  function buildIssuePicker() {
-    var sel = document.getElementById("issue-picker");
-    DATA.issues.forEach(function (b) {
-      sel.appendChild(el("option", { value: b.issue.id, text: b.issue.label + "（" + b.issue.dates + "）" }));
-    });
-    sel.addEventListener("change", function () { location.hash = "#/" + sel.value; });
-  }
-
-  /* ── 起動 ───────────────────────────────────── */
-
-  if (!DATA || !DATA.issues || !DATA.issues.length) {
-    app.appendChild(el("p", { class: "empty", text: "記事データがありません。python3 tools/build.py を実行してください。" }));
-    return;
-  }
-
   applyTheme();
-  applyRuby();
-  buildIssuePicker();
-
-  document.addEventListener("click", function (ev) {
-    var w = ev.target.closest(".w");
-    if (w) { ev.stopPropagation(); openGloss(w); return; }
-    if (!ev.target.closest(".popover")) closePop();
-
-    var chip = ev.target.closest(".chip[data-filter]");
-    if (chip) {
-      var f = chip.getAttribute("data-filter"), v = chip.getAttribute("data-value");
-      filters[f] = filters[f] === v ? null : v;
-      render();
-      return;
-    }
-
-    if (ev.target.closest("#ruby-toggle")) {
-      store("newstext:ruby", rubyOn() ? "off" : "on");
-      applyRuby();
-      var btn = document.getElementById("ruby-toggle");
-      btn.setAttribute("aria-pressed", String(rubyOn()));
-      btn.textContent = "ピンイン" + (rubyOn() ? "を隠す" : "を表示");
-      return;
-    }
-
-    if (ev.target.closest("#theme-toggle")) {
-      var root = document.documentElement;
-      var now = root.getAttribute("data-theme");
-      var next = now === "dark" ? "light" : "dark";
-      root.setAttribute("data-theme", next);
-      store("newstext:theme", next);
-    }
-  });
-
-  document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") closePop(); });
-  window.addEventListener("hashchange", function () {
-    render();
-    var sel = document.getElementById("issue-picker");
-    var route = parseHash();
-    if (route.issue) sel.value = route.issue;
-  });
-
-  render();
-  document.getElementById("issue-picker").value = (parseHash().issue || DATA.issues[0].issue.id);
+  window.addEventListener('hashchange', route);
+  route();
 })();
