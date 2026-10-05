@@ -468,3 +468,19 @@ mark.blank.cur { background: color-mix(in srgb, var(--accent) 18%, transparent);
 }
 .hint + .label { margin-top: 16px; }
 .toast.stay { animation: none; border: 0; font: inherit; font-size: 13px; cursor: pointer; }
+
+/* ---------- 記述問題：スクリブル入力と Claude で添削 ---------- */
+.answer.scribble {
+  --rule: color-mix(in srgb, var(--accent) 22%, var(--line));
+  min-height: 300px; padding: 8px 16px; font: 500 22px/2.2 var(--serif); letter-spacing: .04em;
+  background-color: var(--surface);
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent calc(2.2em - 1px), var(--rule) calc(2.2em - 1px), var(--rule) 2.2em);
+  background-position: 0 8px; background-attachment: local;
+}
+.answer.scribble::placeholder { font-size: 15px; letter-spacing: 0; color: var(--faint); }
+.t-checks .chips { margin-top: 8px; }
+.chip.warn { color: var(--accent); border-color: var(--accent); }
+.claude-box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 14px 0 4px; }
+.score-in { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.score-in input { width: 76px; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 16px; text-align: right; }
+@media (min-width: 900px) { .answer.scribble { min-height: 380px; font-size: 24px; } }
