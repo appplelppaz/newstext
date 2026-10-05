@@ -33,6 +33,15 @@
 
   const saveSettings = () => { store.set('settings', S); R = build(S, done); };
 
+  // 過去問・チェックポイント・語彙カードは study.js
+  const ST = window.Study({
+    app, store, toast: (m) => toast(m), esc: (x) => esc(x), todayS: () => todayS(), addDays: (k, n) => addDays(k, n),
+    LEFT: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+    RIGHT: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>',
+    IDIOMS, toS, toT, S: () => S, checkpointDays: () => window.Plan.checkpointDays({ ...window.Plan.DEFAULTS, ...S, rest: (S.rest || []).map(Number) }, R.P),
+    setShift: (d) => { S.inputShift = d; saveSettings(); },
+  });
+
   // ---------- 小物 ----------
   const pad = (n) => String(n).padStart(2, '0');
   const todayS = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
@@ -116,7 +125,7 @@
   function viewToday(k) {
     const today = todayS();
     k = k || today;
-    const tasks = tasksOf(k);
+    const tasks = [...tasksOf(k), ...ST.focusTasks(k)];
     const left = Math.max(0, Math.round((toT(S.exam) - toT(today)) / DAY));
     const pct = Math.round(overall() * 100);
     const C = 2 * Math.PI * 42;
@@ -166,15 +175,16 @@
   }
 
   function taskHTML(t, i) {
-    const link = t.track === 'idioms' || t.track === 'idrev' ? '#/idioms'
-      : /^tr/.test(t.track) ? `#/translate/${t.units[0]}` : '';
+    const link = ST.taskLink(t) || (t.track === 'idioms' || t.track === 'idrev' ? '#/idioms'
+      : /^tr/.test(t.track) ? `#/translate/${t.units[0]}` : '');
+    const dyn = ST.taskMeta(t);
     return `
       <div class="task ${taskDone(t) ? 'done' : ''}" data-i="${i}">
         <button class="stamp" aria-label="Mark done">${CHECK}</button>
         <div class="body">
           <div class="name"><b>${esc(t.name)}</b><span class="min">${t.min} min</span></div>
           ${t.lines.map((l) => `
-            <div class="line"><span class="head">${esc(l.head)}</span><span class="meta">${esc(l.meta)}</span></div>
+            <div class="line"><span class="head">${esc(l.head)}</span><span class="meta">${esc(dyn || l.meta)}</span></div>
             ${l.notes.length ? `<ul class="notes">${l.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}`).join('')}
           ${link ? `<a class="go" href="${link}">Open →</a>` : ''}
         </div>
@@ -295,6 +305,7 @@
         </div>`;
       }).join('')}</div>
       <div class="legend" style="margin-top:18px"><span style="display:inline-block;width:2px;height:10px;background:var(--ink);opacity:.5"></span>&nbsp;plan</div>
+      ${ST.progressHTML()}
     `;
   }
 
@@ -336,12 +347,16 @@
     const newN = queue.filter((n) => !srs[n]).length;
     const head = `
       <div class="row" style="margin:6px 0 4px">
-        <div class="seg"><button data-mode="study" class="${idMode === 'study' ? 'on' : ''}">Study</button><button data-mode="all" class="${idMode === 'all' ? 'on' : ''}">All</button></div>
+        <div class="seg">${[['study', 'Idioms'], ['vocab', 'Vocab'], ['groups', 'Groups'], ['all', 'All']].map(([m, l]) => `<button data-mode="${m}" class="${idMode === m ? 'on' : ''}">${l}</button>`).join('')}</div>
         <span class="spacer"></span>
-        ${idMode === 'study' ? `<span class="chip">New ${newN}</span><span class="chip">Due ${dueN}</span>` : `<span class="chip">${IDIOMS.length}</span>`}
+        ${idMode === 'study' ? `<span class="chip">New ${newN}</span><span class="chip">Due ${dueN}</span>` : idMode === 'all' ? `<span class="chip">${IDIOMS.length}</span>` : ''}
       </div>`;
 
-    if (idMode === 'all') {
+    if (idMode === 'vocab' || idMode === 'groups') {
+      (idMode === 'vocab' ? ST.viewVocab : ST.viewGroups)(app, head);
+      app.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { idMode = b.dataset.mode; location.hash = `#/idioms/${idMode}`; }));
+      return;
+    } else if (idMode === 'all') {
       const q = query.trim().toLowerCase();
       const list = IDIOMS.filter((x) => !q || [x.zh, x.py, x.ja].some((s) => s.toLowerCase().includes(q)));
       app.innerHTML = `${head}
@@ -382,7 +397,7 @@
       card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(); } });
       app.querySelectorAll('[data-g]').forEach((b) => b.addEventListener('click', () => grade(x.n, b.dataset.g === '1')));
     }
-    app.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { idMode = b.dataset.mode; viewIdioms(); }));
+    app.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => { idMode = b.dataset.mode; location.hash = `#/idioms/${idMode}`; }));
   }
 
   // ---------- Translate ----------
@@ -446,7 +461,7 @@
         <div class="field"><span class="label">Rest days</span>
           <div class="dow">${DOW.map((d, i) => `<button type="button" data-d="${i}" class="${S.rest.includes(i) ? 'on' : ''}" aria-pressed="${S.rest.includes(i)}">${d}</button>`).join('')}</div></div>
         <label class="field"><span class="label">Journal · min / day</span><input type="number" id="journal" min="10" max="180" step="5" value="${S.journal}"></label>
-        <label class="field"><span class="label">Past papers</span><input type="number" id="papers" min="1" max="20" value="${S.papers}"></label>
+        <label class="field"><span class="label">Input phase · extra days</span><input type="number" id="shift" min="0" max="42" step="7" value="${S.inputShift || 0}"></label>
         <label class="field"><span class="label">Errors I · start page × 100</span><textarea id="e1" placeholder="1, 5, 9, …">${esc(S.e1Pages)}</textarea></label>
         <div class="field"><span class="label">Theme</span>
           <div class="seg">${['system', 'light', 'dark'].map((t) => `<button type="button" data-theme="${t}" class="${theme === t ? 'on' : ''}">${t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div></div>
@@ -464,7 +479,7 @@
     bind('#start', 'start');
     bind('#exam', 'exam');
     bind('#journal', 'journal', Number);
-    bind('#papers', 'papers', Number);
+    bind('#shift', 'inputShift', Number);
     bind('#e1', 'e1Pages');
     app.querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => {
       const d = +b.dataset.d;
@@ -481,7 +496,7 @@
     const un = app.querySelector('#unrb');
     if (un) un.addEventListener('click', () => { S.anchors = []; saveSettings(); toast('Reset'); viewSettings(); });
     app.querySelector('#export').addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify({ settings: S, done, fixed, srs, drafts }, null, 1)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify({ settings: S, done, fixed, srs, drafts, study: ST.exportData() }, null, 1)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `level1-${todayS()}.json`;
@@ -496,6 +511,7 @@
         S = { ...window.Plan.DEFAULTS, ...(d.settings || {}) };
         done = d.done || {}; fixed = d.fixed || {}; srs = d.srs || {}; drafts = d.drafts || {};
         store.set('done', done); store.set('fixed', fixed); store.set('srs', srs); store.set('drafts', drafts);
+        if (d.study) ST.importData(d.study);
         saveSettings();
         queue = null;
         toast('Imported');
@@ -509,6 +525,7 @@
       S = { ...window.Plan.DEFAULTS };
       done = {}; fixed = {}; srs = {}; drafts = {};
       ['done', 'fixed', 'srs', 'drafts'].forEach((k) => store.set(k, {}));
+      ST.importData({});
       saveSettings();
       queue = null;
       toast('Erased');
@@ -524,11 +541,23 @@
   }
 
   function route() {
-    const [, view = 'today', arg] = location.hash.split('/');
-    document.querySelectorAll('.tabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === view));
+    const [, view = 'today', arg, arg2] = location.hash.split('/');
+    const tab = { check: 'today', drill: 'today', method: 'papers', guide: 'papers' }[view] || view;
+    document.querySelectorAll('.tabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
     if (view !== 'idioms') { queue = null; reveal = false; }
+    if (route.last !== location.hash) { ST.stop(); if (!(view === 'check' && arg2 === 'result')) ST.resetSession(); }
+    route.last = location.hash;
     if (view === 'plan') viewPlan(arg);
-    else if (view === 'idioms') viewIdioms();
+    else if (view === 'idioms') { idMode = ['vocab', 'groups', 'all'].includes(arg) ? arg : 'study'; viewIdioms(); }
+    else if (view === 'papers') {
+      if (!arg) ST.viewPapers();
+      else if (arg === 'review') ST.viewReview();
+      else if (arg2) ST.viewSection(arg, arg2);
+      else ST.viewPaper(arg);
+    } else if (view === 'check') { if (arg2 === 'result') ST.viewCheckResult(arg); else ST.viewCheck(arg); }
+    else if (view === 'drill') ST.viewDrill(arg);
+    else if (view === 'method') ST.viewMethod();
+    else if (view === 'guide') ST.viewGuide();
     else if (view === 'translate') viewTranslate(arg ? +arg : 0);
     else if (view === 'progress') viewProgress();
     else if (view === 'settings') viewSettings();
