@@ -262,7 +262,7 @@ window.Study = function Study(ctx) {
   }
   // 答えを書く所。Pencil ならマス目、Keyboard なら入力欄
   function penInput(host, o) {
-    if (wmode === 'pen' && !o.keyOnly) {
+    if ((wmode === 'pen' || o.forcePen) && !o.keyOnly) {
       const g = Ink.grid(host, { key: o.key, fitChars: o.fit, cols: o.cols, rows: o.rows, cell: o.cell, fixed: o.fixed, grow: o.grow, onChange: o.onCount, onMark: o.onMark });
       return { pen: true, reveal: (m) => g.reveal(m), g };
     }
@@ -311,6 +311,94 @@ window.Study = function Study(ctx) {
     }
   });
   const hzBtn = (v) => (v && v.w ? `<button type="button" class="mini ${hz[hzId(v.w, `${v.py || ''} · ${v.ja || ''}`)] ? 'on' : ''}" data-hzw="${esc(v.w)}" data-hzp="${esc(`${v.py || ''} · ${v.ja || ''}`)}" aria-label="Add to Hanzi" title="Hanzi デッキに入れる">✎</button>` : '');
+
+
+  // ---------- 記述問題：スクリブルで書き、Claude アプリで添削する ----------
+  // 作文・中訳・要約は答えが一つではないので、Pencil の手書きをスクリブルで文字にして入れ、
+  // 原文・解答例・採点の観点と一緒に Claude アプリへ送って採点してもらう
+  const TRAD = new Set([...'們個來時對說會國為過還這後經與學點東書車長門見問開關樣當發現電話語讀寫錢體頭業總從無聽覺記議認論應實費氣處習變親雙愛場報難動廣歡進遠選邊際隊陽陰陳隨雜雲靜響順須預領顧顯風飛飯館馬驗鬥魚鳥麗麼黃齊龍歲歷貓萬蘇鄉產給結網線練級統細終組織綠買賣讓識聲樂藝術遊戲極構環視確計證設詞試誤課調談請謝貴資質趕跡軍輕較輪辦農運達違適遲遺鐘鐵銀錯鍵閉間陸險隻雖頁項題類顏願飲餘驚髮鬧鮮黨齒裡傳']);
+  function checksHTML(text, o) {
+    const n = count(text);
+    const out = [];
+    if (o.limit) out.push(`<span class="chip ${n >= o.limit[0] && n <= o.limit[1] ? 'accent' : ''}">${n} / ${o.limit[0]}–${o.limit[1]}</span>`);
+    else if (n) out.push(`<span class="chip">${n} 字</span>`);
+    (o.words || []).forEach((w) => out.push(`<span class="chip ${text.includes(w) ? 'accent' : ''}">${text.includes(w) ? '✓' : '○'} ${esc(w)}</span>`));
+    if (o.lang !== 'ja') {
+      const tr = [...new Set([...text].filter((c) => TRAD.has(c)))];
+      if (tr.length) out.push(`<span class="chip warn">繁体字？ ${esc(tr.join('・'))}</span>`);
+    }
+    return out.length ? `<div class="chips">${out.join('')}</div>` : '';
+  }
+  // Pencil で書くとスクリブルが文字にする入力欄（キーボードでもそのまま打てる）
+  function scribbleInput(host, o) {
+    host.innerHTML = `<textarea class="answer scribble" lang="${o.lang || 'zh-CN'}" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="${esc(o.placeholder || 'Apple Pencil で書く（スクリブル）')}">${esc(o.text())}</textarea><div class="t-checks"></div>`;
+    const ta = host.querySelector('textarea');
+    const ck = host.querySelector('.t-checks');
+    const upd = () => { ck.innerHTML = checksHTML(ta.value, o); };
+    ta.addEventListener('input', () => { o.setText(ta.value); upd(); });
+    upd();
+    return { value: () => ta.value };
+  }
+  // Claude への添削依頼の文章
+  function gradePrompt(o) {
+    const L = [
+      'あなたは中国語検定試験（日本中国語検定協会）の1級・準1級の採点者で、日本語を母語とする学習者を長く教えてきた中国語教師です。次の解答を本番の基準で採点し、添削してください。',
+      '',
+      `■ 問題：${o.title}（${o.kind}・${o.pts}点）`,
+    ];
+    if (o.instr) L.push(o.instr);
+    if (o.passage) L.push('', '■ 本文・原稿', o.passage);
+    if (o.src) L.push('', '■ 原文', o.src);
+    if (o.points && o.points.length) L.push('', '■ 押さえるべき要点', ...o.points.map((x) => `- ${x}`));
+    if (o.words) L.push('', `■ 指定語：${o.words.join('、')}（${o.wordsRule}。使った語には下線を引く）`);
+    if (o.limit) L.push(`■ 字数：${o.limit[0]}〜${o.limit[1]}字（句読点も1字）`);
+    if (o.model) L.push('', '■ 公式の解答例（これ以外の表現も正解になりうる）', o.model);
+    if (o.alt && o.alt.length) L.push('', '■ 別の解答例', ...o.alt);
+    if (o.rubric) L.push('', '■ 採点の観点（配点）', ...o.rubric.map(([t, p]) => `- ${t.replace(/^\(\w+\) /, '')}：${p}点`));
+    L.push(
+      '',
+      `■ 学習者の解答（Apple Pencil の手書きを iPad のスクリブルで文字にしたもの。答えは${o.lang === 'ja' ? '日本語' : '中国語（簡体字）'}）`,
+      o.answer && o.answer.trim() ? o.answer.trim() : '（未記入）',
+      '',
+      '■ 出してほしいもの',
+      '1. 誤りの一覧：1つずつ「誤り → 正しい形 → 理由（意味のずれ・文法・語彙・コロケーション・語順・和製漢語など）」。誤字、繁体字や日本の字体の混用、字数、指定語の使い方も確かめる',
+      '2. 観点ごとの点数と、減点の理由',
+      '3. 学習者の解答をできるだけ生かして直した全文',
+      '4. 次に気をつける点（2〜3点）',
+      `5. 最後の行に「SCORE: 点数 / ${o.pts}」とだけ書く`,
+      '',
+      '解答例と言い方が違うだけなら減点しないでください。意味のずれ、文法・語彙の誤り、不自然さを減点してください。スクリブルの読み取りミスと思われる字（形の似た別の字）は「読み取りミス？」として指摘し、減点は控えめにしてください。',
+    );
+    return L.join('\n');
+  }
+  const prompts = {};
+  let promptN = 0;
+  function claudeHTML(build) {
+    const id = `g${++promptN}`;
+    prompts[id] = build;
+    return `<div class="claude-box"><button type="button" class="btn accent" data-claude="${id}">Claude で添削</button><button type="button" class="btn" data-copy="${id}">Copy</button>
+      <span class="muted small">共有シートで Claude を選ぶ → 返ってきた SCORE を点数欄へ</span></div>`;
+  }
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand && document.execCommand('copy');
+      ta.remove();
+      return !!ok;
+    }
+  }
+  app.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-claude], [data-copy]');
+    if (!b) return;
+    const text = prompts[b.dataset.claude || b.dataset.copy]();
+    if (b.dataset.claude && navigator.share) {
+      try { await navigator.share({ title: 'Level 1 · 添削', text }); return; } catch (err) { if (err && err.name === 'AbortError') return; }
+    }
+    toast((await copyText(text)) ? 'Copied — Claude に貼り付けて送信' : 'Copy failed');
+  });
 
   // ========== 4択の練習（過去問・Mistakes・チェックポイント共通） ==========
   // 左＝本文・音声・メモ、右＝設問・解説（iPad では左右、スマホでは上下）
@@ -552,7 +640,7 @@ window.Study = function Study(ctx) {
     tick();
   }
 
-  // 要約（聞いてメモ → 原稿用紙に書く）
+  // 要約（聞いてメモ → スクリブルで書く → Claude で添削）
   function viewSummary(pid, s, head) {
     const key = `${pid}|${s.id}`;
     const lim = s.limit || IDX.summaryChars[meta(pid).level];
@@ -568,7 +656,7 @@ window.Study = function Study(ctx) {
           <div id="after-l"></div>
         </div>
         <div class="pane-r">
-          <div class="row wbar">${modeSwitch()}<span class="spacer"></span><span class="chip" id="cnt"></span><button class="btn" id="show">Check</button></div>
+          <div class="row wbar"><span class="label">Answer · ${lim[0]}–${lim[1]}字</span><span class="spacer"></span><button class="btn" id="show">Check</button></div>
           <div id="ans"></div>
           <div id="after-r"></div>
         </div>
@@ -577,18 +665,21 @@ window.Study = function Study(ctx) {
     bindTTS(app, { p: p.zh }, () => { plays++; $('#plays').textContent = `Played ${plays} / 3`; });
     Ink.pad($('.memo-pad'), { key: `${key}|memo`, ratio: 0.9 });
     countdown($('#t15'), '15:00 Start', 15, s._t = s._t || {});
-    const setCnt = (n) => { const el = $('#cnt'); if (!el) return; el.textContent = `${n} / ${lim[0]}–${lim[1]}`; el.classList.toggle('accent', n >= lim[0] && n <= lim[1]); };
-    const mount = () => penInput($('#ans'), { key: `${key}|ink`, fit: lim[1], onCount: setCnt, text: () => texts[key] || '', setText: (v) => { texts[key] = v; save(); }, tall: true, placeholder: `要約（${lim[0]}〜${lim[1]}字）` });
-    mount();
-    bindModeSwitch($('.wbar'), mount);
+    scribbleInput($('#ans'), { limit: lim, text: () => texts[key] || '', setText: (v) => { texts[key] = v; save(); }, placeholder: `要約（${lim[0]}〜${lim[1]}字）を Apple Pencil で書く` });
+    const prompt = () => gradePrompt({
+      title: `${title(pid)} ${SEC_NAME[s.id]}`, kind: '聞いて要約', pts: s.pts, limit: lim,
+      instr: `中国語の文章を聞き、その内容を${lim[0]}字以上${lim[1]}字以内の中国語に要約する問題（15分）。`,
+      passage: p.zh, points: s.guide && s.guide.points, model: s.model, rubric: SUM_RUBRIC, answer: texts[key], lang: 'zh',
+    });
     $('#show').addEventListener('click', () => {
       shown = !shown;
       $('#show').textContent = shown ? 'Hide' : 'Check';
       $('#after-l').innerHTML = shown ? `<div class="pbox"><div class="label">Script</div><div class="zh-text">${esc(p.zh || '')}</div>${p.ja ? `<details class="ja-det"><summary>日本語訳</summary><div>${esc(p.ja)}</div></details>` : ''}${(p.vocab || []).map(vocabLine).join('')}</div>` : '';
       $('#after-r').innerHTML = shown ? `
+        ${claudeHTML(prompt)}
         <div class="ex-block"><div class="label">Model</div>${tapHTML(s.model || '', `${pid} ${s.id}`)}</div>
         ${s.guide ? guideHTML(s.guide) : ''}
-        ${rubricHTML([['内容：原文の要点（話題・展開・結論）を落とさず入れた', 20], ['構成：要点のつながりが接続表現で明確', 6], ['正確さ：文法・語彙・誤字がない', 10], ['形式：字数が範囲内、字体を混用していない', 4]], s.pts)}` : '';
+        ${rubricHTML(SUM_RUBRIC, s.pts)}` : '';
       bindRubric(pid, s.id, s.pts);
     });
   }
@@ -599,17 +690,32 @@ window.Study = function Study(ctx) {
       ${g.phrases ? `<div class="label" style="margin-top:10px">Useful</div>${g.phrases.map((x) => `<p><b class="serif">${esc(x[0])}</b> — ${esc(x[1])}</p>`).join('')}` : ''}
       ${g.trim ? `<p class="muted">${esc(g.trim)}</p>` : ''}</div>`;
   }
+  // 点数：Claude の SCORE を入れるか、観点にチェックして合計する
   function rubricHTML(rows, max) {
-    return `<div class="ex-block rubric"><div class="label">Self-score</div>${rows.map(([t, p], i) => `<label class="rrow"><input type="checkbox" data-rp="${p}" data-ri="${i}"> <span>${esc(t)}</span><span class="muted">${p}</span></label>`).join('')}
-      <div class="actions"><span class="chip" id="rsum">0 / ${max}</span><span class="spacer"></span><button class="btn primary" id="rsave">Save score</button></div></div>`;
+    return `<div class="ex-block rubric"><div class="label">Score</div>${rows.map(([t, p], i) => `<label class="rrow"><input type="checkbox" data-rp="${p}" data-ri="${i}"> <span>${esc(t)}</span><span class="muted">${p}</span></label>`).join('')}
+      <div class="actions"><label class="score-in"><input type="number" id="rscore" min="0" max="${max}" step="1" inputmode="numeric" placeholder="0"> / ${max}</label><span class="muted small">Claude の SCORE（設問が複数なら合計）、または観点の合計</span><span class="spacer"></span><button class="btn primary" id="rsave">Save score</button></div></div>`;
   }
   function bindRubric(pid, sec, max) {
     const boxes = [...app.querySelectorAll('[data-rp]')];
-    if (!boxes.length) return;
+    const inp = app.querySelector('#rscore');
+    if (!inp) return;
     const sum = () => boxes.filter((b) => b.checked).reduce((a, b) => a + +b.dataset.rp, 0);
-    boxes.forEach((b) => b.addEventListener('change', () => { app.querySelector('#rsum').textContent = `${sum()} / ${max}`; }));
-    app.querySelector('#rsave').addEventListener('click', () => { saveScore(pid, sec, sum(), max); toast('Saved'); });
+    boxes.forEach((b) => b.addEventListener('change', () => { inp.value = sum(); }));
+    app.querySelector('#rsave').addEventListener('click', () => {
+      const v = inp.value === '' ? sum() : Math.max(0, Math.min(max, Number(inp.value)));
+      if (Number.isNaN(v)) { toast('Score?'); return; }
+      saveScore(pid, sec, v, max);
+      toast('Saved');
+    });
   }
+  // 記述問題の採点の観点（自己採点にも Claude への依頼にも使う）
+  function writeRubric(s, x) {
+    if (x.short) return [[`(${x.n}) 正しく書けた`, x.pts]];
+    if (x.words) return [[`(${x.n}) 指定語を${wordsRule(x)}、正しい意味・用法で使った`, Math.round(x.pts * 0.375)], [`(${x.n}) 内容がテーマに合い、筋が通っている`, Math.round(x.pts * 0.25)], [`(${x.n}) 文法・語彙の誤りがない`, Math.round(x.pts * 0.25)], [`(${x.n}) 字数が範囲内、字体の混用がない`, x.pts - Math.round(x.pts * 0.375) - 2 * Math.round(x.pts * 0.25)]];
+    return [[`(${x.n}) 意味が原文どおり正確（訳し落とし・誤訳がない）`, Math.round(x.pts * 0.6)], [`(${x.n}) 自然な${s.type === 'zhja' ? '日本語' : '中国語'}になっている`, Math.round(x.pts * 0.3)], [`(${x.n}) 誤字・脱字・字体の混用がない`, x.pts - Math.round(x.pts * 0.6) - Math.round(x.pts * 0.3)]];
+  }
+  const wordsRule = (x) => (x.words.length > 3 && x.limit[1] > 100 ? '3つ以上' : 'すべて');
+  const SUM_RUBRIC = [['内容：原文の要点（話題・展開・結論）を落とさず入れた', 20], ['構成：要点のつながりが接続表現で明確', 6], ['正確さ：文法・語彙・誤字がない', 10], ['形式：字数が範囲内、字体を混用していない', 4]];
 
   // 書き取り（全文を聞き、指定の5か所を漢字で書く）
   function diffChars(mine, model) {
@@ -683,72 +789,69 @@ window.Study = function Study(ctx) {
   }
 
   // 翻訳（中文日訳・日文中訳）・作文・ピンインの漢字書き
+  // 記述（翻訳・作文）はスクリブルで書いて Claude で添削。ピンインの漢字書きは字形を見るのでマス目に書く
   function viewWrite(pid, s, head) {
     const p = (s.passages || [])[0];
     const shown = {};
     const inputs = {};
     const src = `${pid} ${s.id}`;
-    const zh = (t) => !(s.type === 'zhja' && !t.short); // 中国語で答える（＝手で書く）か
-    const anyPen = s.tasks.some(zh);
+    const ja = (t) => s.type === 'zhja' && !t.short; // 日本語で答える
+    const kind = (t) => (t.short ? 'ピンインを漢字に' : t.words ? '作文' : s.type === 'zhja' ? '中文日訳' : '日文中訳');
     const block = (t, withSrc) => `<div class="wtask" data-t="${t.n}">
-        <div class="label">(${t.n}) · ${t.pts} pts</div>
+        <div class="label">(${t.n}) · ${t.pts} pts${t.short ? ' · Pencil' : ''}</div>
         ${withSrc ? `<div class="src">${esc(t.src)}</div>` : ''}
-        ${t.words ? `<div class="chips">${t.words.map((w) => `<span class="chip" data-w="${esc(w)}">${esc(w)}</span>`).join('')}<span class="chip" data-cnt="${t.n}"></span></div>` : ''}
         <div class="t-in"></div>
         <div class="actions"><span class="spacer"></span><button class="btn" data-show="${t.n}">Check</button></div>
         <div class="t-after"></div>
       </div>`;
     // 本文がある大問（W4）は左に本文、右に設問。本文がない大問（W5）は設問ごとに左＝原文・解説、右＝答え
     app.innerHTML = `${head}
-      ${anyPen ? `<div class="row wbar lead">${modeSwitch()}<span class="muted small">本番と同じく手で書く。Keyboard ならスクリブルも使える</span></div>` : ''}
       ${p ? `<div class="split write"><div class="pane-l"><div class="pbox passage"><div class="label">Passage</div><div class="zh-text">${esc(p.zh)}</div><div class="ja-slot"></div></div></div>
           <div class="pane-r">${s.tasks.map((t) => block(t, true)).join('')}</div></div>`
         : s.tasks.map((t) => `<div class="split write row-split"><div class="pane-l"><div class="label">(${t.n}) · ${t.pts} pts</div><div class="src">${esc(t.src)}</div><div class="t-after-l" data-tl="${t.n}"></div></div>
           <div class="pane-r">${block(t, false).replace(`<div class="label">(${t.n}) · ${t.pts} pts</div>`, '')}</div></div>`).join('')}
       <div id="rub"></div>`;
     const $ = (q) => app.querySelector(q);
-    const setCnt = (t) => (n) => {
-      const c = app.querySelector(`[data-cnt="${t.n}"]`);
-      if (c) { c.textContent = `${n} / ${t.limit[0]}–${t.limit[1]}`; c.classList.toggle('accent', n >= t.limit[0] && n <= t.limit[1]); }
+    s.tasks.forEach((t) => {
       const key = `${pid}|${s.id}|${t.n}`;
-      if (t.words && wmode === 'key') app.querySelectorAll(`[data-t="${t.n}"] [data-w]`).forEach((w) => w.classList.toggle('accent', (texts[key] || '').includes(w.dataset.w)));
-    };
-    const mount = () => {
-      s.tasks.forEach((t) => {
-        const key = `${pid}|${s.id}|${t.n}`;
-        const n = Ink.chars(t.model).length;
-        inputs[t.n] = penInput(app.querySelector(`[data-t="${t.n}"] .t-in`), {
-          key: `${key}|ink`, keyOnly: !zh(t), lang: zh(t) ? 'zh-CN' : 'ja',
-          ...(t.short ? { cols: n, rows: 1, cell: 76, fixed: true, grow: false } : { fit: t.limit ? t.limit[1] : Math.ceil(n * 1.3) }),
-          short: t.short, onCount: t.limit ? setCnt(t) : null,
+      const host = app.querySelector(`[data-t="${t.n}"] .t-in`);
+      const n = Ink.chars(t.model).length;
+      inputs[t.n] = t.short
+        ? penInput(host, {
+          key: `${key}|ink`, forcePen: true, cols: n, rows: 1, cell: 76, fixed: true, grow: false,
+          onMark: (i, on, ch) => { if (!Ink.isHan(ch || '')) return; if (on) addHz(ch, `${t.src}`, src); else removeHz(ch, `${t.src}`); },
+        })
+        : scribbleInput(host, {
+          lang: ja(t) ? 'ja' : 'zh-CN', limit: t.limit, words: t.words,
           text: () => texts[key] || '', setText: (v) => { texts[key] = v; save(); },
-          placeholder: t.short ? '漢字（簡体字）' : t.words ? '作文' : s.type === 'zhja' ? '日本語訳' : '中文翻译',
-          onMark: t.short ? (i, on, ch) => { if (!Ink.isHan(ch || '')) return; if (on) addHz(ch, `${t.src}`, src); else removeHz(ch, `${t.src}`); } : null,
+          placeholder: t.words ? '作文を Apple Pencil で書く' : ja(t) ? '日本語訳を Apple Pencil で書く' : '中国語訳を Apple Pencil で書く',
         });
-        if (shown[t.n] && t.short) Promise.resolve(inputs[t.n].g && inputs[t.n].g.ready).then(() => inputs[t.n].reveal(t.model));
-      });
-    };
+    });
+    const prompt = (t) => () => gradePrompt({
+      title: `${title(pid)} ${SEC_NAME[s.id]} (${t.n})`, kind: kind(t), pts: t.pts, lang: ja(t) ? 'ja' : 'zh',
+      instr: t.words ? 'テーマについて、指定語を使って中国語で文章を書く問題。' : ja(t) ? '本文の下線部を日本語に訳す問題。' : '日本語を中国語に訳す問題。',
+      passage: ja(t) && p ? p.zh : '', src: t.words ? '' : t.src, ...(t.words ? { instr: t.src, words: t.words, wordsRule: wordsRule(t), limit: t.limit } : {}),
+      model: t.model, alt: t.alt, rubric: writeRubric(s, t), answer: texts[`${pid}|${s.id}|${t.n}`],
+    });
     const after = (t) => {
       const on = shown[t.n];
       const target = app.querySelector(`[data-tl="${t.n}"]`) || app.querySelector(`[data-t="${t.n}"] .t-after`);
-      const modelHTML = zh(t) && !t.short ? tapHTML(t.model, src) : `<div class="src">${esc(t.model)}</div>`;
+      const modelHTML = !ja(t) && !t.short ? tapHTML(t.model, src) : `<div class="src">${esc(t.model)}</div>`;
       target.innerHTML = on ? `
+        ${t.short ? '<p class="muted small hint">解答例が薄く重なります。違う字のマスを押して × を付けると Hanzi デッキに入ります。</p>' : claudeHTML(prompt(t))}
         <div class="ex-block"><div class="label">Model</div>${modelHTML}</div>
         ${t.note ? `<div class="ex-block"><p>${esc(t.note)}</p></div>` : ''}
         ${t.steps && t.steps.length ? `<div class="ex-block"><div class="label">Step by step</div>${t.steps.map((x) => `<div class="step"><div class="serif">${esc(x[0])}</div><div>→ ${esc(x[1])}</div>${x[2] ? `<div class="muted small">${esc(x[2])}</div>` : ''}</div>`).join('')}</div>` : ''}
         ${t.alt && t.alt.length ? `<div class="ex-block"><div class="label">Other ways</div>${t.alt.map((x) => `<p>${esc(x)}</p>`).join('')}</div>` : ''}
         ${t.pit && t.pit.length ? `<div class="ex-block"><div class="label">Watch out</div>${t.pit.map((x) => `<p>${esc(x)}</p>`).join('')}</div>` : ''}
         ${t.vocab && t.vocab.length ? `<div class="ex-block"><div class="label">Words</div>${t.vocab.map(vocabLine).join('')}</div>` : ''}` : '';
-      inputs[t.n].reveal(on && t.short ? t.model : null);
-      const ja = app.querySelector('.ja-slot');
-      if (ja && p) ja.innerHTML = Object.values(shown).some(Boolean) && p.ja ? `<details class="ja-det"><summary>日本語訳</summary><div>${esc(p.ja)}</div></details>${(p.vocab || []).map(vocabLine).join('')}` : '';
+      if (t.short) inputs[t.n].reveal(on ? t.model : null);
+      const js = app.querySelector('.ja-slot');
+      if (js && p) js.innerHTML = Object.values(shown).some(Boolean) && p.ja ? `<details class="ja-det"><summary>日本語訳</summary><div>${esc(p.ja)}</div></details>${(p.vocab || []).map(vocabLine).join('')}` : '';
       const any = Object.values(shown).some(Boolean);
-      $('#rub').innerHTML = any ? rubricHTML(s.tasks.flatMap((x) => x.short ? [[`(${x.n}) 正しく書けた`, x.pts]] : x.words ? [[`(${x.n}) 指定語を${x.words.length > 3 && x.limit[1] > 100 ? '3つ以上' : 'すべて'}、正しい意味・用法で使った`, Math.round(x.pts * 0.375)], [`(${x.n}) 内容がテーマに合い、筋が通っている`, Math.round(x.pts * 0.25)], [`(${x.n}) 文法・語彙の誤りがない`, Math.round(x.pts * 0.25)], [`(${x.n}) 字数が範囲内、字体の混用がない`, x.pts - Math.round(x.pts * 0.375) - 2 * Math.round(x.pts * 0.25)]] : [[`(${x.n}) 意味が原文どおり正確（訳し落とし・誤訳がない）`, Math.round(x.pts * 0.6)], [`(${x.n}) 自然な${s.type === 'zhja' ? '日本語' : '中国語'}になっている`, Math.round(x.pts * 0.3)], [`(${x.n}) 誤字・脱字・字体の混用がない`, x.pts - Math.round(x.pts * 0.6) - Math.round(x.pts * 0.3)]]), s.pts) : '';
+      $('#rub').innerHTML = any ? rubricHTML(s.tasks.flatMap((x) => writeRubric(s, x)), s.pts) : '';
       bindRubric(pid, s.id, s.pts);
     };
-    mount();
-    const wb = $('.wbar');
-    if (wb) bindModeSwitch(wb, mount);
     app.querySelectorAll('[data-show]').forEach((b) => b.addEventListener('click', () => {
       const t = s.tasks.find((x) => String(x.n) === b.dataset.show);
       shown[t.n] = !shown[t.n];
@@ -1156,7 +1259,7 @@ window.Study = function Study(ctx) {
   return {
     viewPapers, viewPaper, viewSection, viewReview, viewVocab, viewGroups, viewHanzi, viewCheck, viewCheckResult, viewDrill,
     viewMethod, viewGuide, progressHTML, focusTasks, extraTasks, taskMeta, taskLink, importFiles,
-    penInput, tapHTML, modeSwitch, bindModeSwitch, hzCount: () => [hzDue().length, Object.keys(hz).length],
+    penInput, tapHTML, modeSwitch, bindModeSwitch, scribbleInput, gradePrompt, claudeHTML, hzCount: () => [hzDue().length, Object.keys(hz).length],
     stop: () => { tts.stop(); },
     resetSession: () => { st = null; vq = null; vshow = false; gq = null; hq = null; hshow = false; hg = null; },
     exportData: () => ({ qa, scores, texts, vsrs, cpq, cpr, focus, hz }),

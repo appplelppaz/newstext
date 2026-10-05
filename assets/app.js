@@ -56,6 +56,7 @@
   const RIGHT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
 
   function toast(msg) {
+    document.querySelectorAll('.toast:not(.stay)').forEach((x) => x.remove());
     const el = document.createElement('div');
     el.className = 'toast';
     el.textContent = msg;
@@ -96,6 +97,7 @@
       row(offline.ready, offline.ready ? 'App saved for offline use' : 'Not saved yet', offline.ready ? '' : 'ネットにつないだ状態で一度開くと保存されます。'),
       row(home, home ? 'Home Screen app' : 'Opened in Safari', home ? '' : 'Safari の共有ボタン › 「ホーム画面に追加」で、全画面のアプリとして使えます。'),
       row(offline.persisted === true, `Storage ${est ? `${(est.usage / 1048576).toFixed(1)} MB` : ''}${offline.persisted ? ' · kept' : ''}`, offline.persisted ? '' : '過去問データと手書きは端末に保存されます。ホーム画面に追加すると消されにくくなります。'),
+      `<div class="rrow"><span>✎</span><span>Scribble<div class="muted small">記述問題は Apple Pencil で入力欄に書くと文字になります。設定 › Apple Pencil › スクリブル をオン、設定 › 一般 › キーボード › キーボード に「中国語（簡体字）」を追加してください。</div></span></div>`,
       row(zh.length > 0, zh.length ? `Chinese voice · ${esc(zh.map((v) => v.name).slice(0, 3).join(', '))}` : 'No Chinese voice', zh.length ? '電波がなくても読み上げで聞き取り練習ができます。' : '設定 › アクセシビリティ › 読み上げコンテンツ › 声 › 中国語 で、高音質の声をダウンロードしてください。'),
     ].join('');
   }
@@ -462,7 +464,7 @@
     const x = TRANS[n - 1];
     if (!x) { location.hash = '#/translate'; return; }
     const id = done[`tr-${n}`] ? `trr-${n}` : `tr-${n}`;
-    // 日文中訳は本番どおり手で書く（Pencil）。中文日訳は答えが日本語なのでキーボード
+    // 答えは Apple Pencil で書き、スクリブルで文字にする。Show の後に Claude アプリで添削できる
     const zhOut = x.dir === 'JA → ZH';
     let shown = false;
     app.innerHTML = `
@@ -471,7 +473,6 @@
         <div class="date">T${n}<small>${esc(x.dir)} · ${esc(x.t)}</small></div>
         <button data-go="${Math.min(TRANS.length, n + 1)}" aria-label="Next">${RIGHT}</button>
       </div>
-      ${zhOut ? `<div class="row wbar lead">${ST.modeSwitch()}<span class="muted small">本番と同じく手で書く</span></div>` : ''}
       <div class="split write">
         <div class="pane-l"><div class="src">${esc(x.src)}</div><div id="tmodel"></div></div>
         <div class="pane-r">
@@ -483,17 +484,20 @@
           </div>
         </div>
       </div>`;
-    const mount = () => ST.penInput(app.querySelector('#tin'), {
-      key: `tr|${n}|ink`, keyOnly: !zhOut, lang: zhOut ? 'zh-CN' : 'ja', fit: Math.ceil(window.Ink.chars(x.model).length * 1.3), tall: true,
-      text: () => drafts[n] || '', setText: (v) => { drafts[n] = v; store.set('drafts', drafts); }, placeholder: 'Your translation',
+    ST.scribbleInput(app.querySelector('#tin'), {
+      lang: zhOut ? 'zh-CN' : 'ja', text: () => drafts[n] || '', setText: (v) => { drafts[n] = v; store.set('drafts', drafts); },
+      placeholder: zhOut ? '中国語訳を Apple Pencil で書く' : '日本語訳を Apple Pencil で書く',
     });
-    mount();
-    const wb = app.querySelector('.wbar');
-    if (wb) ST.bindModeSwitch(wb, mount);
+    const prompt = () => ST.gradePrompt({
+      title: `Translate T${n}（${x.t}）`, kind: zhOut ? '日文中訳' : '中文日訳', pts: 10, lang: zhOut ? 'zh' : 'ja',
+      instr: '中検1級レベルの翻訳演習。', src: x.src, model: x.model, points: x.pts, answer: drafts[n],
+      rubric: [['意味が原文どおり正確（訳し落とし・誤訳がない）', 6], [`自然な${zhOut ? '中国語' : '日本語'}になっている`, 3], ['誤字・脱字・字体の混用がない', 1]],
+    });
     app.querySelector('#show').addEventListener('click', (e) => {
       shown = !shown;
       e.target.textContent = shown ? 'Hide' : 'Show';
       app.querySelector('#tmodel').innerHTML = shown ? `
+        ${ST.claudeHTML(prompt)}
         <div class="label" style="margin-top:20px">Model</div>
         ${zhOut ? ST.tapHTML(x.model, `T${n}`) : `<div class="src">${esc(x.model)}</div>`}
         <div class="label">Points</div>
