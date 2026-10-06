@@ -339,7 +339,6 @@ body { touch-action: manipulation; }
 .memo .label { margin-bottom: 6px; }
 .wbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
 .wbar.lead { margin: 0 0 16px; }
-.wmode button { min-width: 84px; }
 .wtask .t-in { margin-top: 8px; }
 .qcard .wbox { margin: 12px 0 4px; display: flex; justify-content: center; }
 .tapm span { cursor: pointer; border-radius: 3px; padding: 0 1px; transition: background .15s; }
@@ -350,7 +349,7 @@ body { touch-action: manipulation; }
 .hzcard { align-items: center; text-align: center; }
 .hzcard .cat { align-self: flex-start; }
 .hz-prompt { font-size: 21px; line-height: 1.7; margin: 22px 0 24px; }
-.hz-grid { display: flex; justify-content: center; max-width: 100%; }
+.hz-in { width: 100%; max-width: 560px; }
 .hz-ans { font-size: 46px; font-weight: 700; margin-top: 18px; }
 .grade.one { grid-template-columns: 1fr; }
 .actions.center { justify-content: center; }
@@ -484,3 +483,20 @@ mark.blank.cur { background: color-mix(in srgb, var(--accent) 18%, transparent);
 .score-in { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
 .score-in input { width: 76px; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-size: 16px; text-align: right; }
 @media (min-width: 900px) { .answer.scribble { min-height: 380px; font-size: 24px; } }
+.answer.scribble.short { min-height: 110px; font-size: 26px; }
+.answer.scribble.center { text-align: center; font-size: 34px; letter-spacing: .12em; }
+@media (min-width: 900px) { .answer.scribble.short { min-height: 120px; font-size: 28px; } .answer.scribble.center { font-size: 40px; } }
+
+/* ---------- Claude の添削結果 ---------- */
+.result-box { margin: 18px 0 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.result-box .row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.result-box .spacer { flex: 1; }
+.answer.paste { min-height: 64px; font: 13px/1.5 ui-monospace, Menlo, monospace; }
+.r-out:empty { display: none; }
+.r-out { margin-top: 12px; }
+.r-sum { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+.r-sum .chips, .r-sum p, .r-sum details { flex-basis: 100%; margin: 0; }
+.r-score { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.r-score.ok { color: var(--ink); }
+.r-score.ng { color: var(--accent); }
+.fb-text { white-space: pre-wrap; font-size: 14px; line-height: 1.7; margin-top: 8px; max-height: 60vh; overflow: auto; }
