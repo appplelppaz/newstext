@@ -292,7 +292,7 @@
       days.get(k).push(task);
     };
     const T = tracks(S, P);
-    const order = ['cp', 'ppD', 'ppC', 'ppA', 'ppB', 'ppL', 'ppF', 'tbm1', 'tbm2', 'errors', 'er', 'tb1', 'tb2', 'kk1', 'hsk', 'kk2', 'idioms', 'vocab', 'tr1', 'tr2', 'tr2b', 'tr3', 'mistakes', 'ppfix', 'idrev', 'reading', 'journal', 'weekly'];
+    const order = ['cp', 'ppD', 'ppC', 'ppA', 'ppB', 'ppL', 'ppF', 'tbm1', 'tbm2', 'errors', 'er', 'tb1', 'tb2', 'kk1', 'hsk', 'kk2', 'idioms', 'vocab', 'tr1', 'tr2', 'tr2b', 'tr3', 'mistakes', 'ppfix', 'idrev', 'reading', 'journal', 'podcast', 'weekly'];
     const LV = { L1: 'Level 1', P1: 'Pre-1' };
     const blocked = new Set();
 
@@ -326,7 +326,13 @@
       if (S.rest.includes(dow(t))) continue;
       const k = toS(t);
       const ph = P.findIndex((p) => t >= p.a && t < p.b);
-      add(t, { key: 'journal', track: 'journal', name: 'Journal', min: +S.journal || 45, fixed: `${k}|journal`, lines: [{ head: 'Listening', meta: '', notes: [] }] });
+      // 聞き取りは本物の声で：中国語ジャーナル（手順つき）と、取り込んだポッドキャスト（Listen タブ）
+      const lm = +S.journal || 45;
+      const pm = Math.max(10, Math.round(lm * 0.45 / 5) * 5);
+      add(t, { key: 'journal', track: 'journal', name: 'Journal', min: lm - pm, fixed: `${k}|journal`, lines: [{ head: '中国語ジャーナル', meta: 'real voices', notes: ['通しで聞く（スクリプトは見ない）', 'スクリプトで確かめる', '分からなかった文を3回聞き直す', 'シャドーイング（1記事）'] }] });
+      const pmode = ph === 0 ? 'dictation' : dow(t) === 3 ? 'summary' : dow(t) % 2 ? 'dictation' : 'shadow';
+      const PMODE = { dictation: ['Dictation', '10 sentences · then Shadow', ['1文ずつ聞く → スクリブルで書く → Check', '聞き取れなかった字は Hanzi へ']], shadow: ['Shadow', '10 sentences', ['原稿を見て3回重ねる → 原稿を隠して2回']], summary: ['Summary', '1 chunk · 180–200字', ['3回まで聞いてメモ → 要約 → Claude で添削']] };
+      add(t, { key: 'podcast', track: 'podcast', name: 'Podcast', min: pm, fixed: `${k}|podcast`, link: `#/listen/today/${pmode}`, lines: [{ head: PMODE[pmode][0], meta: PMODE[pmode][1], notes: PMODE[pmode][2] }] });
       // P1 は多読（やさしめの文章を大量に）、P2 以降は試験レベルの長文
       add(t, ph === 0
         ? { key: 'reading', track: 'reading', name: 'Reading', min: 30, fixed: `${k}|reading`, lines: [{ head: 'Extensive', meta: 'easy · a lot · no dictionary', notes: [] }] }

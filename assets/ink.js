@@ -8,11 +8,12 @@ window.Ink = (function () {
   function db() {
     if (!dbp) {
       dbp = new Promise((res, rej) => {
-        const r = indexedDB.open('level1', 2);
+        const r = indexedDB.open('level1', 3);
         r.onupgradeneeded = () => {
           const d = r.result;
           if (!d.objectStoreNames.contains('papers')) d.createObjectStore('papers', { keyPath: 'id' });
           if (!d.objectStoreNames.contains('ink')) d.createObjectStore('ink', { keyPath: 'k' });
+          if (!d.objectStoreNames.contains('pods')) d.createObjectStore('pods', { keyPath: 'id' }); // ポッドキャスト（原稿と音声）
         };
         r.onsuccess = () => res(r.result);
         r.onerror = () => rej(r.error);

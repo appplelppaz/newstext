@@ -42,6 +42,12 @@
     setShift: (d) => { S.inputShift = d; saveSettings(); },
   });
 
+  // 本物の声で聞く（ポッドキャスト）は listen.js
+  const LS = window.Listen({
+    app, store, toast: (m) => toast(m), esc: (x) => esc(x), todayS: () => todayS(), ST,
+    LEFT: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+  });
+
   // ---------- 小物 ----------
   const pad = (n) => String(n).padStart(2, '0');
   const todayS = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
@@ -98,7 +104,8 @@
       row(home, home ? 'Home Screen app' : 'Opened in Safari', home ? '' : 'Safari の共有ボタン › 「ホーム画面に追加」で、全画面のアプリとして使えます。'),
       row(offline.persisted === true, `Storage ${est ? `${(est.usage / 1048576).toFixed(1)} MB` : ''}${offline.persisted ? ' · kept' : ''}`, offline.persisted ? '' : '過去問データと手書きは端末に保存されます。ホーム画面に追加すると消されにくくなります。'),
       `<div class="rrow"><span>✎</span><span>Scribble<div class="muted small">文字を書く所はすべて、Apple Pencil で入力欄に書くと文字になります。設定 › Apple Pencil › スクリブル をオン、設定 › 一般 › キーボード › キーボード に「中国語（簡体字）」を追加してください。</div></span></div>`,
-      row(zh.length > 0, zh.length ? `Chinese voice · ${esc(zh.map((v) => v.name).slice(0, 3).join(', '))}` : 'No Chinese voice', zh.length ? '電波がなくても読み上げで聞き取り練習ができます。' : '設定 › アクセシビリティ › 読み上げコンテンツ › 声 › 中国語 で、高音質の声をダウンロードしてください。'),
+      `<div class="rrow"><span>♪</span><span>Real voices<div class="muted small">聞き取りの練習は Listen（ポッドキャスト）と中国語ジャーナルの本物の声で行います。取り込んだ音声は端末に保存され、電波がなくても聞けます。</div></span></div>`,
+      row(zh.length > 0, zh.length ? `Chinese voice · ${esc(zh.map((v) => v.name).slice(0, 3).join(', '))}` : 'No Chinese voice', '過去問の聞き取りだけは公式の音声がないので、原稿を iPad の読み上げで鳴らします。'),
     ].join('');
   }
   if ('speechSynthesis' in window) speechSynthesis.addEventListener('voiceschanged', () => offlineInfo());
@@ -355,7 +362,7 @@
         </div>`;
       }).join('')}</div>
       <div class="legend" style="margin-top:18px"><span style="display:inline-block;width:2px;height:10px;background:var(--ink);opacity:.5"></span>&nbsp;plan</div>
-      </div><div class="dcard">${ST.progressHTML()}</div></div>
+      </div><div class="dcard">${ST.progressHTML()}${LS.progressHTML()}</div></div>
     `;
   }
 
@@ -563,7 +570,7 @@
     const un = app.querySelector('#unrb');
     if (un) un.addEventListener('click', () => { S.anchors = []; saveSettings(); toast('Reset'); viewSettings(); });
     app.querySelector('#export').addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify({ settings: S, done, fixed, srs, drafts, study: ST.exportData() }, null, 1)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify({ settings: S, done, fixed, srs, drafts, study: ST.exportData(), pod: LS.exportData() }, null, 1)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `level1-${todayS()}.json`;
@@ -579,6 +586,7 @@
         done = d.done || {}; fixed = d.fixed || {}; srs = d.srs || {}; drafts = d.drafts || {};
         store.set('done', done); store.set('fixed', fixed); store.set('srs', srs); store.set('drafts', drafts);
         if (d.study) ST.importData(d.study);
+        if (d.pod) LS.importData(d.pod);
         saveSettings();
         queue = null;
         toast('Imported');
@@ -593,6 +601,7 @@
       done = {}; fixed = {}; srs = {}; drafts = {};
       ['done', 'fixed', 'srs', 'drafts'].forEach((k) => store.set(k, {}));
       ST.importData({});
+      LS.importData({});
       saveSettings();
       queue = null;
       toast('Erased');
@@ -615,7 +624,7 @@
     const sc = document.getElementById('sidecount');
     if (sc) sc.textContent = Math.max(0, Math.round((toT(S.exam) - toT(todayS())) / DAY));
     if (view !== 'idioms') { queue = null; reveal = false; }
-    if (route.last !== location.hash) { ST.stop(); if (!(view === 'check' && arg2 === 'result')) ST.resetSession(); }
+    if (route.last !== location.hash) { ST.stop(); LS.stop(); if (!(view === 'check' && arg2 === 'result')) ST.resetSession(); }
     route.last = location.hash;
     if (view === 'plan') viewPlan(arg);
     else if (view === 'idioms') { idMode = ['vocab', 'hanzi', 'groups', 'all'].includes(arg) ? arg : 'study'; viewIdioms(); }
@@ -628,6 +637,7 @@
     else if (view === 'drill') ST.viewDrill(arg);
     else if (view === 'method') ST.viewMethod();
     else if (view === 'guide') ST.viewGuide();
+    else if (view === 'listen') LS.view(arg, arg2);
     else if (view === 'translate') viewTranslate(arg ? +arg : 0);
     else if (view === 'progress') viewProgress();
     else if (view === 'settings') viewSettings();

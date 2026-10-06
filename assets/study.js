@@ -28,7 +28,7 @@ window.Study = function Study(ctx) {
   const PAPERS = {};
   let ready = false;
   const onReady = [];
-  // 過去問と手書きの線は同じ IndexedDB（level1 v2）に入れる。開き方は ink.js にまとめる
+  // 過去問と手書きの線は同じ IndexedDB（level1 v3）に入れる。開き方は ink.js にまとめる
   const idb = () => window.Ink.db();
   async function loadPapers() {
     try {
@@ -1211,7 +1211,7 @@ window.Study = function Study(ctx) {
         items.push({ kind: 'grammar', head: w.k, meta: `${pct(w.acc)} · re-read + exercises`, notes: refs.map(refLabel), link: '#/drill/grammar', min: 25 });
       } else if (a === 'pinyin') items.push({ kind: 'pinyin', head: 'Pinyin', meta: `${pct(w.acc)} · 多音字 drill`, notes: [], link: '#/drill/pinyin', min: 15 });
       else if (a === 'idioms') items.push({ kind: 'idioms', head: `Idioms · ${w.k}`, meta: `${pct(w.acc)} · review this type`, notes: [], link: '#/idioms', min: 15 });
-      else if (a === 'listening') items.push({ kind: 'listening', head: 'Shadowing', meta: `${pct(w.acc)} · +15 min with Journal script`, notes: ['1文ずつ聞く → 書き取る → 原稿で確認 → 声に出して重ねる'], link: '', min: 15 });
+      else if (a === 'listening') items.push({ kind: 'listening', head: 'Podcast dictation', meta: `${pct(w.acc)} · +15 sentences / day`, notes: ['Listen › Dictation：1文ずつ聞く → 書き取る → 原稿で確認', 'そのあと同じ文を Shadow で声に出して重ねる'], link: '#/listen/today/dictation', min: 15 });
       else if (a === 'vocab') items.push({ kind: 'vocab', head: 'Exam Vocab', meta: `${pct(w.acc)} · +10 new cards / day`, notes: [], link: '#/idioms/vocab', min: 15 });
       else if (a === 'writing') items.push({ kind: 'writing', head: 'Hanzi · Write', meta: `${pct(w.acc)} · write 10 a day with Pencil`, notes: ['語彙カードの ✎ で書けない語を Hanzi に入れ、手で書いて思い出す'], link: '#/idioms/hanzi', min: 10 });
     });
@@ -1391,7 +1391,7 @@ window.Study = function Study(ctx) {
   return {
     viewPapers, viewPaper, viewSection, viewReview, viewVocab, viewGroups, viewHanzi, viewCheck, viewCheckResult, viewDrill,
     viewMethod, viewGuide, progressHTML, focusTasks, extraTasks, taskMeta, taskLink, importFiles,
-    tapHTML, scribbleInput, gradePrompt, claudeHTML, resultHTML, hzCount: () => [hzDue().length, Object.keys(hz).length],
+    tapHTML, scribbleInput, gradePrompt, claudeHTML, resultHTML, diffChars, hzFromDiff, isTrad: (c) => TRAD.has(c), hzCount: () => [hzDue().length, Object.keys(hz).length],
     stop: () => { tts.stop(); },
     resetSession: () => { st = null; vq = null; vshow = false; gq = null; hq = null; hval = ''; hres = null; },
     exportData: () => ({ qa, scores, texts, vsrs, cpq, cpr, focus, hz, fb }),

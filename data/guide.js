@@ -44,7 +44,7 @@ window.GUIDE = {
     {
       h: '耳は「音」と「意味」を分けて鍛える',
       why: 'シャドーイングは主に音の聞き取り（音素の知覚）を伸ばし、内容理解は別に練習が必要だという結果がある（Hamada 2016）。',
-      how: 'リスニングは、通し聞きで内容 → 原稿で確認 → 1文ずつの書き取り → シャドーイング、の順に行う。',
+      how: 'リスニングは、通し聞きで内容 → 原稿で確認 → 1文ずつの書き取り → シャドーイング、の順に行う。材料は本物の声にする。読み上げの合成音声には、実際の話し言葉にある速さの揺れ・言いよどみ・音の弱まりやつながりがなく、そこを聞き取る練習にならない（Field 2008）。毎日の聞き取りは、中国語ジャーナルと、Listen に取り込んだ大陸のポッドキャスト（原稿・ピンイン・和訳つき）で行う。Listen では1文ずつ書き取って字ごとに照合し、聞き取れなかった字を Hanzi デッキに入れる。P2 からは週1回、1.5〜2分を3回まで聞いて180〜200字に要約する（1級のリスニング2の形式）。過去問の聞き取りだけは公式の音声がないので、原稿を読み上げで鳴らす。',
     },
     {
       h: '測って、弱点に時間を回す',
@@ -60,6 +60,7 @@ window.GUIDE = {
   refs: [
     'Cepeda, N. J., Vul, E., Rohrer, D., Wixted, J. T., & Pashler, H. (2008). Spacing effects in learning: A temporal ridgeline of optimal retention. Psychological Science, 19, 1095–1102.',
     'Dunlosky, J., Rawson, K. A., Marsh, E. J., Nathan, M. J., & Willingham, D. T. (2013). Improving students’ learning with effective learning techniques. Psychological Science in the Public Interest, 14(1), 4–58.',
+    'Field, J. (2008). Listening in the Language Classroom. Cambridge University Press.',
     'Guan, C. Q., Liu, Y., Chan, D. H. L., Ye, F., & Perfetti, C. A. (2011). Writing strengthens orthography and alphabetic-coding strengthens phonology in learning to read Chinese. Journal of Educational Psychology, 103(3), 509–522.',
     'Hamada, Y. (2016). Shadowing: Who benefits and how? Uncovering a booming EFL teaching technique for listening comprehension. Language Teaching Research, 20(1), 35–52.',
     'Hu, M., & Nation, I. S. P. (2000). Unknown vocabulary density and reading comprehension. Reading in a Foreign Language, 13(1), 403–430.',
