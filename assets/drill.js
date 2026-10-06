@@ -23,7 +23,7 @@ window.Drill = function Drill(ctx) {
 
   // ---------- 保存 ----------
   // st = { cur: {ex, answer, hints, question, attemptId} | {make: {src, meta}} | null, exprs: [], len, srcMode }
-  let st = Object.assign({ cur: null, exprs: [], len: 250, srcMode: 'stock' }, store.get('jz', {}));
+  let st = Object.assign({ cur: null, exprs: [], len: 150, srcMode: 'stock' }, store.get('jz', {}));
   const save = () => store.set('jz', st);
   const DB = { corpus: [], attempts: [] };
   let ready = false;
@@ -533,7 +533,7 @@ ${(c.question || '').trim() || 'なし'}
     },
     exportData: () => ({ st, corpus: DB.corpus, attempts: DB.attempts }),
     async importData(d) {
-      st = Object.assign({ cur: null, exprs: [], len: 250, srcMode: 'stock' }, (d && d.st) || {});
+      st = Object.assign({ cur: null, exprs: [], len: 150, srcMode: 'stock' }, (d && d.st) || {});
       save();
       for (const x of [...DB.corpus, ...DB.attempts]) await remove(x);
       for (const x of [...((d && d.corpus) || []), ...((d && d.attempts) || [])]) await put(x);
