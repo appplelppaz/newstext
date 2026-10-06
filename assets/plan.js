@@ -292,7 +292,7 @@
       days.get(k).push(task);
     };
     const T = tracks(S, P);
-    const order = ['cp', 'ppD', 'ppC', 'ppA', 'ppB', 'ppL', 'ppF', 'tbm1', 'tbm2', 'errors', 'er', 'tb1', 'tb2', 'kk1', 'hsk', 'kk2', 'idioms', 'vocab', 'tr1', 'tr2', 'tr2b', 'tr3', 'mistakes', 'ppfix', 'idrev', 'reading', 'journal', 'podcast', 'weekly'];
+    const order = ['cp', 'ppD', 'ppC', 'ppA', 'ppB', 'ppL', 'ppF', 'tbm1', 'tbm2', 'errors', 'er', 'tb1', 'tb2', 'kk1', 'hsk', 'kk2', 'idioms', 'vocab', 'tr1', 'tr2', 'tr2b', 'tr3', 'mistakes', 'ppfix', 'idrev', 'reading', 'journal', 'podcast', 'jzdrill', 'weekly'];
     const LV = { L1: 'Level 1', P1: 'Pre-1' };
     const blocked = new Set();
 
@@ -333,6 +333,8 @@
       const pmode = ph === 0 ? 'dictation' : dow(t) === 3 ? 'summary' : dow(t) % 2 ? 'dictation' : 'shadow';
       const PMODE = { dictation: ['Dictation', '10 sentences · then Shadow', ['1文ずつ聞く → スクリブルで書く → Check', '聞き取れなかった字は Hanzi へ']], shadow: ['Shadow', '10 sentences', ['原稿を見て3回重ねる → 原稿を隠して2回']], summary: ['Summary', '1 chunk · 180–200字', ['3回まで聞いてメモ → 要約 → Claude で添削']] };
       add(t, { key: 'podcast', track: 'podcast', name: 'Podcast', min: pm, fixed: `${k}|podcast`, link: `#/listen/today/${pmode}`, lines: [{ head: PMODE[pmode][0], meta: PMODE[pmode][1], notes: PMODE[pmode][2] }] });
+      // 日文中訳ドリル（P2 から火・金）：本物の記事から出題し、Claude の添削で弱点と表現を貯める
+      if (ph >= 1 && [2, 5].includes(dow(t))) add(t, { key: 'jzdrill', track: 'jzdrill', name: 'JA → ZH Drill', min: 30, fixed: `${k}|jzdrill`, link: '#/zhdrill', lines: [{ head: '日文中訳ドリル', meta: '1 article · 150–250字', notes: ['記事を選ぶ → Claude で出題 → スクリブルで訳す → 提出して添削', '覚えるべき表現を表現ノートに保存し、日本語 → 中国語で言えるか確かめる'] }] });
       // P1 は多読（やさしめの文章を大量に）、P2 以降は試験レベルの長文
       add(t, ph === 0
         ? { key: 'reading', track: 'reading', name: 'Reading', min: 30, fixed: `${k}|reading`, lines: [{ head: 'Extensive', meta: 'easy · a lot · no dictionary', notes: [] }] }

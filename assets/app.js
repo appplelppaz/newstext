@@ -48,6 +48,12 @@
     LEFT: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
   });
 
+  // 日文中訳ドリル（原文 → 日本語の問題 → 中国語訳 → Claude の添削）は drill.js
+  const DR = window.Drill({
+    app, store, toast: (m) => toast(m), esc: (x) => esc(x), todayS: () => todayS(), ST,
+    LEFT: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+  });
+
   // ---------- 小物 ----------
   const pad = (n) => String(n).padStart(2, '0');
   const todayS = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
@@ -362,7 +368,7 @@
         </div>`;
       }).join('')}</div>
       <div class="legend" style="margin-top:18px"><span style="display:inline-block;width:2px;height:10px;background:var(--ink);opacity:.5"></span>&nbsp;plan</div>
-      </div><div class="dcard">${ST.progressHTML()}${LS.progressHTML()}</div></div>
+      </div><div class="dcard">${ST.progressHTML()}${DR.summaryHTML()}${LS.progressHTML()}</div></div>
     `;
   }
 
@@ -461,7 +467,8 @@
   function viewTranslate(n) {
     if (!n) {
       app.innerHTML = `
-        <div class="row" style="margin:6px 0 10px"><span class="label">Translate</span><span class="spacer"></span><span class="chip">${TRANS.filter((x) => done[`tr-${x.n}`]).length} / ${TRANS.length}</span></div>
+        <a class="jz-cta" href="#/zhdrill"><b>日文中訳ドリル</b><span>本物の中国語記事 → 日本語の問題 → スクリブルで訳す → Claude が朱筆で添削。弱点と覚える表現が貯まる</span></a>
+        <div class="row" style="margin:6px 0 10px"><span class="label">Translate · 50</span><span class="spacer"></span><span class="chip">${TRANS.filter((x) => done[`tr-${x.n}`]).length} / ${TRANS.length}</span></div>
         <div class="tlist">${TRANS.map((x) => `<a href="#/translate/${x.n}">
           <span class="n">T${x.n}</span><span>${esc(x.dir)}</span><span class="muted">${esc(x.t)}</span>
           <span class="dot ${done[`tr-${x.n}`] ? 'done' : drafts[x.n] ? 'draft' : ''}"></span>
@@ -570,7 +577,7 @@
     const un = app.querySelector('#unrb');
     if (un) un.addEventListener('click', () => { S.anchors = []; saveSettings(); toast('Reset'); viewSettings(); });
     app.querySelector('#export').addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify({ settings: S, done, fixed, srs, drafts, study: ST.exportData(), pod: LS.exportData() }, null, 1)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify({ settings: S, done, fixed, srs, drafts, study: ST.exportData(), pod: LS.exportData(), jz: DR.exportData() }, null, 1)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `level1-${todayS()}.json`;
@@ -587,6 +594,7 @@
         store.set('done', done); store.set('fixed', fixed); store.set('srs', srs); store.set('drafts', drafts);
         if (d.study) ST.importData(d.study);
         if (d.pod) LS.importData(d.pod);
+        if (d.jz) DR.importData(d.jz);
         saveSettings();
         queue = null;
         toast('Imported');
@@ -602,6 +610,7 @@
       ['done', 'fixed', 'srs', 'drafts'].forEach((k) => store.set(k, {}));
       ST.importData({});
       LS.importData({});
+      DR.importData({});
       saveSettings();
       queue = null;
       toast('Erased');
@@ -618,7 +627,7 @@
 
   function route() {
     const [, view = 'today', arg, arg2] = location.hash.split('/');
-    const tab = { check: 'today', drill: 'today', method: 'papers', guide: 'papers' }[view] || view;
+    const tab = { check: 'today', drill: 'today', method: 'papers', guide: 'papers', zhdrill: 'translate' }[view] || view;
     document.querySelectorAll('.tabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
     app.dataset.view = view;
     const sc = document.getElementById('sidecount');
@@ -638,6 +647,7 @@
     else if (view === 'method') ST.viewMethod();
     else if (view === 'guide') ST.viewGuide();
     else if (view === 'listen') LS.view(arg, arg2);
+    else if (view === 'zhdrill') DR.view(arg, arg2);
     else if (view === 'translate') viewTranslate(arg ? +arg : 0);
     else if (view === 'progress') viewProgress();
     else if (view === 'settings') viewSettings();

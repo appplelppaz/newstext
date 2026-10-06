@@ -56,6 +56,11 @@ window.GUIDE = {
       why: '中検の記述（日文中訳・作文・要約・書き取り・ピンインの漢字書き）はすべて紙に手書きする。練習の形を本番に合わせるほど、本番で覚えたことを引き出しやすい（転移適切処理：Morris, Bransford & Franks 1977）。中国語の学習では、手で書くことが字形の記憶と読みの力を支えることが示されている（Tan et al. 2005; Guan et al. 2011）。一方、作文や翻訳は答えが一つではなく、解答例との文字の一致では採点できない。自己採点では、自分で気づけない誤り（コロケーション・語順・和製漢語）が減点されない。',
       how: '文字を入れる所（書き取り・ピンインの漢字書き・Hanzi デッキ・チェックポイントの Writing・作文・中訳・中文日訳・要約）は、すべて入力欄に Pencil で書き、スクリブルで文字にする。答えが一つに決まる問題はアプリがその場で採点する：書き取りは1字ずつ差分を出して点数の目安を入れ、書けなかった字は Hanzi デッキに入る。ただし、スクリブルは崩れた字を正しい字に直して読み取ることがあるので、字形の採点は甘くなる。止め・はね・画数は、ときどき紙に書いて確かめる。作文・中訳・要約は Check の後に「Claude で添削」を押すと、原文・解答例・採点の観点・自分の答えが Claude アプリに渡る。返ってくるのは、誤りごとの理由と分類（コロケーション・語順・和製漢語など12種）、弱点の診断、次の練習、覚える表現、直した全文と、最後の RESULT ブロック（SCORE・TAGS・WEAK・WORDS）。返答を「Paste result」で貼ると、点数は大問の点数欄に入り、分類は Progress の Writing に集計され、覚える表現は Hanzi デッキに入る。直近14日で同じ分類の誤りが3回以上あると、平日の Today に「Writing focus」が入る。4択・ピンイン・成語の意味は「認識」の問題なのでタップで速く量をこなす。本文へのマーカーは学習効果が低い（Dunlosky et al. 2013）ので付けず、今の設問の空欄を自動で強調する。',
     },
+    {
+      h: '日文中訳は「本物の中国語に訳し戻す」練習で鍛える',
+      why: '自分で書いてみると、言いたいのに言えない所に気づき、その後のインプットでその形に目が向くようになる（アウトプット仮説：Swain 1985）。中国語の記事から作った日本語を訳し戻すと、自分の訳と、ネイティブが書いた原文とをそのまま比べられる。1級の日文中訳は、書き言葉の語彙・成語・関連詞と、日本語の漢語をそのまま流用しないこと（同形異義語）が分かれ目になる。',
+      how: 'P2 から火・金に、日文中訳ドリルで1題（150〜250字）。人民網・光明網などの記事を原文ストックに貯め、Claude に自然な日本語の問題文を作ってもらう → スクリブルで訳す → 1級の基準で添削（文ごとの【誤り】【改善】【別解OK】）。原文と違っても正確で自然なら減点しない。覚えるべき表現は表現ノートで日本語 → 中国語の自己テストをし、未習得の表現は次の出題で使う。過去の弱点は次の添削で「くり返し」として指摘される。',
+    },
   ],
   refs: [
     'Cepeda, N. J., Vul, E., Rohrer, D., Wixted, J. T., & Pashler, H. (2008). Spacing effects in learning: A temporal ridgeline of optimal retention. Psychological Science, 19, 1095–1102.',
@@ -72,6 +77,7 @@ window.GUIDE = {
     'Roediger, H. L., & Karpicke, J. D. (2006). Test-enhanced learning: Taking memory tests improves long-term retention. Psychological Science, 17, 249–255.',
     'Rohrer, D., & Taylor, K. (2007). The shuffling of mathematics problems improves learning. Instructional Science, 35, 481–498.',
     'Swain, M. (1995). Three functions of output in second language learning. In G. Cook & B. Seidlhofer (Eds.), Principle and Practice in Applied Linguistics (pp. 125–144). Oxford University Press.',
+    'Swain, M. (1985). Communicative competence: Some roles of comprehensible input and comprehensible output in its development. In S. Gass & C. Madden (Eds.), Input in Second Language Acquisition (pp. 235–253). Newbury House.',
     'Tan, L. H., Spinks, J. A., Eden, G. F., Perfetti, C. A., & Siok, W. T. (2005). Reading depends on writing, in Chinese. Proceedings of the National Academy of Sciences, 102(24), 8781–8785.',
   ],
 

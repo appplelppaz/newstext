@@ -28,7 +28,7 @@ window.Study = function Study(ctx) {
   const PAPERS = {};
   let ready = false;
   const onReady = [];
-  // 過去問と手書きの線は同じ IndexedDB（level1 v3）に入れる。開き方は ink.js にまとめる
+  // 過去問と手書きの線は同じ IndexedDB（level1 v4）に入れる。開き方は ink.js にまとめる
   const idb = () => window.Ink.db();
   async function loadPapers() {
     try {
@@ -1391,7 +1391,9 @@ window.Study = function Study(ctx) {
   return {
     viewPapers, viewPaper, viewSection, viewReview, viewVocab, viewGroups, viewHanzi, viewCheck, viewCheckResult, viewDrill,
     viewMethod, viewGuide, progressHTML, focusTasks, extraTasks, taskMeta, taskLink, importFiles,
-    tapHTML, scribbleInput, gradePrompt, claudeHTML, resultHTML, diffChars, hzFromDiff, isTrad: (c) => TRAD.has(c), hzCount: () => [hzDue().length, Object.keys(hz).length],
+    tapHTML, scribbleInput, gradePrompt, claudeHTML, resultHTML, diffChars, hzFromDiff, addHz, isTrad: (c) => TRAD.has(c), FB_TAGS,
+    addFb: (key, entry) => { (fb[key] = fb[key] || []).push(entry); saveFb(); },
+    hzCount: () => [hzDue().length, Object.keys(hz).length],
     stop: () => { tts.stop(); },
     resetSession: () => { st = null; vq = null; vshow = false; gq = null; hq = null; hval = ''; hres = null; },
     exportData: () => ({ qa, scores, texts, vsrs, cpq, cpr, focus, hz, fb }),
