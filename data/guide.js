@@ -4,7 +4,7 @@ window.GUIDE = {
     {
       h: 'インプットを先に、アウトプットは後から',
       why: '理解できる大量のインプットが習得の土台になる（Krashen 1985）。語彙が足りないうちに翻訳や作文をしても、知らない語は出てこない。1級の長文は語彙の98%前後が分かって初めて辞書なしで読めるとされる（Hu & Nation 2000; Laufer & Ravenhorst-Kalovski 2010）。',
-      how: 'P1（10〜12月）は文法の理解・語彙・多読・リスニングだけにし、翻訳は1月から始める。',
+      how: 'P1（10〜12月）は文法の理解・語彙・多読・リスニングを中心にし、翻訳演習（Translate の50題）は1月から始める。日文中訳ドリルだけは10月から週2回、短い記事（150字前後）で始め、書き言葉の表現を表現ノートに貯めていく。',
     },
     {
       h: 'ただし「小さなアウトプット」は最初から',
@@ -44,7 +44,7 @@ window.GUIDE = {
     {
       h: '耳は「音」と「意味」を分けて鍛える',
       why: 'シャドーイングは主に音の聞き取り（音素の知覚）を伸ばし、内容理解は別に練習が必要だという結果がある（Hamada 2016）。',
-      how: 'リスニングは、通し聞きで内容 → 原稿で確認 → 1文ずつの書き取り → シャドーイング、の順に行う。',
+      how: 'リスニングは、通し聞きで内容 → 原稿で確認 → 1文ずつの書き取り → シャドーイング、の順に行う。材料は本物の声にする。読み上げの合成音声には、実際の話し言葉にある速さの揺れ・言いよどみ・音の弱まりやつながりがなく、そこを聞き取る練習にならない（Field 2008）。毎日の聞き取りは、中国語ジャーナルと、Listen に取り込んだ大陸のポッドキャスト（原稿・ピンイン・和訳つき）で行う。Listen では1文ずつ書き取って字ごとに照合し、聞き取れなかった字を Hanzi デッキに入れる。P2 からは週1回、1.5〜2分を3回まで聞いて180〜200字に要約する（1級のリスニング2の形式）。過去問の聞き取りだけは公式の音声がないので、原稿を読み上げで鳴らす。',
     },
     {
       h: '測って、弱点に時間を回す',
@@ -56,10 +56,16 @@ window.GUIDE = {
       why: '中検の記述（日文中訳・作文・要約・書き取り・ピンインの漢字書き）はすべて紙に手書きする。練習の形を本番に合わせるほど、本番で覚えたことを引き出しやすい（転移適切処理：Morris, Bransford & Franks 1977）。中国語の学習では、手で書くことが字形の記憶と読みの力を支えることが示されている（Tan et al. 2005; Guan et al. 2011）。一方、作文や翻訳は答えが一つではなく、解答例との文字の一致では採点できない。自己採点では、自分で気づけない誤り（コロケーション・語順・和製漢語）が減点されない。',
       how: '文字を入れる所（書き取り・ピンインの漢字書き・Hanzi デッキ・チェックポイントの Writing・作文・中訳・中文日訳・要約）は、すべて入力欄に Pencil で書き、スクリブルで文字にする。答えが一つに決まる問題はアプリがその場で採点する：書き取りは1字ずつ差分を出して点数の目安を入れ、書けなかった字は Hanzi デッキに入る。ただし、スクリブルは崩れた字を正しい字に直して読み取ることがあるので、字形の採点は甘くなる。止め・はね・画数は、ときどき紙に書いて確かめる。作文・中訳・要約は Check の後に「Claude で添削」を押すと、原文・解答例・採点の観点・自分の答えが Claude アプリに渡る。返ってくるのは、誤りごとの理由と分類（コロケーション・語順・和製漢語など12種）、弱点の診断、次の練習、覚える表現、直した全文と、最後の RESULT ブロック（SCORE・TAGS・WEAK・WORDS）。返答を「Paste result」で貼ると、点数は大問の点数欄に入り、分類は Progress の Writing に集計され、覚える表現は Hanzi デッキに入る。直近14日で同じ分類の誤りが3回以上あると、平日の Today に「Writing focus」が入る。4択・ピンイン・成語の意味は「認識」の問題なのでタップで速く量をこなす。本文へのマーカーは学習効果が低い（Dunlosky et al. 2013）ので付けず、今の設問の空欄を自動で強調する。',
     },
+    {
+      h: '日文中訳は「本物の中国語に訳し戻す」練習で鍛える',
+      why: '自分で書いてみると、言いたいのに言えない所に気づき、その後のインプットでその形に目が向くようになる（アウトプット仮説：Swain 1985）。中国語の記事から作った日本語を訳し戻すと、自分の訳と、ネイティブが書いた原文とをそのまま比べられる。1級の日文中訳は、書き言葉の語彙・成語・関連詞と、日本語の漢語をそのまま流用しないこと（同形異義語）が分かれ目になる。',
+      how: '10月から火・金に、日文中訳ドリルで1題（P1 は150字前後、1月から150〜250字）。人民網・光明網などの記事を原文ストックに貯め、Claude に自然な日本語の問題文を作ってもらう → スクリブルで訳す → 1級の基準で添削（文ごとの【誤り】【改善】【別解OK】）。原文と違っても正確で自然なら減点しない。覚えるべき表現は表現ノートで日本語 → 中国語の自己テストをし、未習得の表現は次の出題で使う。過去の弱点は次の添削で「くり返し」として指摘される。',
+    },
   ],
   refs: [
     'Cepeda, N. J., Vul, E., Rohrer, D., Wixted, J. T., & Pashler, H. (2008). Spacing effects in learning: A temporal ridgeline of optimal retention. Psychological Science, 19, 1095–1102.',
     'Dunlosky, J., Rawson, K. A., Marsh, E. J., Nathan, M. J., & Willingham, D. T. (2013). Improving students’ learning with effective learning techniques. Psychological Science in the Public Interest, 14(1), 4–58.',
+    'Field, J. (2008). Listening in the Language Classroom. Cambridge University Press.',
     'Guan, C. Q., Liu, Y., Chan, D. H. L., Ye, F., & Perfetti, C. A. (2011). Writing strengthens orthography and alphabetic-coding strengthens phonology in learning to read Chinese. Journal of Educational Psychology, 103(3), 509–522.',
     'Hamada, Y. (2016). Shadowing: Who benefits and how? Uncovering a booming EFL teaching technique for listening comprehension. Language Teaching Research, 20(1), 35–52.',
     'Hu, M., & Nation, I. S. P. (2000). Unknown vocabulary density and reading comprehension. Reading in a Foreign Language, 13(1), 403–430.',
@@ -71,6 +77,7 @@ window.GUIDE = {
     'Roediger, H. L., & Karpicke, J. D. (2006). Test-enhanced learning: Taking memory tests improves long-term retention. Psychological Science, 17, 249–255.',
     'Rohrer, D., & Taylor, K. (2007). The shuffling of mathematics problems improves learning. Instructional Science, 35, 481–498.',
     'Swain, M. (1995). Three functions of output in second language learning. In G. Cook & B. Seidlhofer (Eds.), Principle and Practice in Applied Linguistics (pp. 125–144). Oxford University Press.',
+    'Swain, M. (1985). Communicative competence: Some roles of comprehensible input and comprehensible output in its development. In S. Gass & C. Madden (Eds.), Input in Second Language Acquisition (pp. 235–253). Newbury House.',
     'Tan, L. H., Spinks, J. A., Eden, G. F., Perfetti, C. A., & Siok, W. T. (2005). Reading depends on writing, in Chinese. Proceedings of the National Academy of Sciences, 102(24), 8781–8785.',
   ],
 
