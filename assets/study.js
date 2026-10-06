@@ -246,32 +246,13 @@ window.Study = function Study(ctx) {
     });
   }
 
-  // ========== 手書き（Apple Pencil）の共通部品 ==========
-  // 本番で手で書く所（中訳・作文・要約・書き取り・ピンインの漢字書き）だけ Pencil で書く。Keyboard に切り替えもできる
-  let wmode = store.get('wmode', 'pen');
+  // ========== 文字の入力 ==========
+  // 文字を書く所はすべてスクリブル（Apple Pencil の手書きを iPadOS が文字にする）の入力欄。
+  // Pencil の手書き（canvas）は、聞き取りのメモ帳にだけ使う
   const Ink = window.Ink;
-  const modeSwitch = () => `<div class="seg wmode" role="group" aria-label="Input"><button type="button" data-wm="pen" class="${wmode === 'pen' ? 'on' : ''}">Pencil</button><button type="button" data-wm="key" class="${wmode === 'key' ? 'on' : ''}">Keyboard</button></div>`;
-  function bindModeSwitch(el, redraw) {
-    el.querySelectorAll('[data-wm]').forEach((b) => b.addEventListener('click', () => {
-      if (wmode === b.dataset.wm) return;
-      wmode = b.dataset.wm;
-      store.set('wmode', wmode);
-      el.querySelectorAll('[data-wm]').forEach((x) => x.classList.toggle('on', x.dataset.wm === wmode));
-      redraw();
-    }));
-  }
-  // 答えを書く所。Pencil ならマス目、Keyboard なら入力欄
-  function penInput(host, o) {
-    if ((wmode === 'pen' || o.forcePen) && !o.keyOnly) {
-      const g = Ink.grid(host, { key: o.key, fitChars: o.fit, cols: o.cols, rows: o.rows, cell: o.cell, fixed: o.fixed, grow: o.grow, onChange: o.onCount, onMark: o.onMark });
-      return { pen: true, reveal: (m) => g.reveal(m), g };
-    }
-    host.innerHTML = `<textarea class="answer ${o.short ? 'short' : ''} ${o.tall ? 'tall' : ''}" placeholder="${esc(o.placeholder || '')}" lang="${o.lang || 'zh-CN'}">${esc(o.text())}</textarea>`;
-    const ta = host.querySelector('textarea');
-    ta.addEventListener('input', () => { o.setText(ta.value); if (o.onCount) o.onCount(count(ta.value)); });
-    if (o.onCount) o.onCount(count(o.text()));
-    return { pen: false, reveal: () => {}, value: () => ta.value };
-  }
+  // 正解が1つの問題の照合（空白と句読点は無視する）
+  const norm = (t) => Ink.chars(t).filter((c) => !/[\s，。、；：！？,.;:!?“”"'‘’（）()…—·]/.test(c)).join('');
+  const same = (a, b) => norm(a) === norm(b) && norm(b).length > 0;
 
   // ---------- Hanzi デッキ（手で書けなかった字を、手で書いて思い出す） ----------
   const snippet = (model, i) => { const m = Ink.chars(model); return `${m.slice(Math.max(0, i - 6), i).join('')}□${m.slice(i + 1, i + 7).join('')}`; };
@@ -331,18 +312,39 @@ window.Study = function Study(ctx) {
   }
   // Pencil で書くとスクリブルが文字にする入力欄（キーボードでもそのまま打てる）
   function scribbleInput(host, o) {
-    host.innerHTML = `<textarea class="answer scribble" lang="${o.lang || 'zh-CN'}" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="${esc(o.placeholder || 'Apple Pencil で書く（スクリブル）')}">${esc(o.text())}</textarea><div class="t-checks"></div>`;
+    host.innerHTML = `<textarea class="answer scribble ${o.short ? 'short' : ''}" lang="${o.lang || 'zh-CN'}" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="${esc(o.placeholder || 'Apple Pencil で書く（スクリブル）')}">${esc(o.text())}</textarea><div class="t-checks"></div>`;
     const ta = host.querySelector('textarea');
     const ck = host.querySelector('.t-checks');
-    const upd = () => { ck.innerHTML = checksHTML(ta.value, o); };
+    const upd = () => { ck.innerHTML = o.noChecks ? '' : checksHTML(ta.value, o); };
     ta.addEventListener('input', () => { o.setText(ta.value); upd(); });
     upd();
-    return { value: () => ta.value };
+    return { value: () => ta.value, el: ta };
   }
+
+  // ---------- Claude の添削：弱点のタグ ----------
+  // 添削の結果は決まったタグで返してもらい、弱点として集計して Today・Progress に生かす
+  const FB_TAGS = {
+    meaning: ['語義・訳語の選択', '意味のずれ、訳語・語の選び方の誤り', 'Vocab カードで語義と例文を確かめる', '#/idioms/vocab'],
+    colloc: ['コロケーション', '動詞と目的語、形容詞と名詞などの組み合わせ', 'Groups で似た語の違いを確かめ、間違えた語で例文を1つ書く', '#/idioms/groups'],
+    grammar: ['文法・構文', '構文・文型・品詞の使い方', '文法ドリルと誤用シリーズの該当項目を解き直す', '#/drill/grammar'],
+    order: ['語順', '連用修飾・時間詞・介詞句などの位置', '文法ドリルで語順の問題を解き、正しい文を音読する', '#/drill/grammar'],
+    particle: ['虚詞・補語', '了・着・过・的地得・介詞・結果補語・方向補語', '誤用シリーズの虚詞・補語の章を読み直す', '#/drill/grammar'],
+    wasei: ['和製漢語・日本語の干渉', '日本語の漢語をそのまま使う、日本語の発想の直訳', 'Vocab カードの「和製漢語の罠」を見直す', '#/idioms/vocab'],
+    omit: ['訳し落とし・付け足し', '原文の一部を訳していない、原文にない内容を足した', 'Translate で1題、原文と1文ずつ突き合わせて書き直す', '#/translate'],
+    style: ['不自然な表現・文体', '意味は通るが不自然、書き言葉と話し言葉の混在', 'Translate の模範訳を音読し、言い回しを1つ借りて書き直す', '#/translate'],
+    char: ['誤字・字体', '誤字・脱字、繁体字や日本の字体の混用', 'Hanzi デッキで書けなかった字を書く', '#/idioms/hanzi'],
+    logic: ['構成・論理', '段落のつながり、接続表現、論理の飛躍', '要約の「How to build it」を読み、構成を真似て1題書く', '#/papers'],
+    point: ['要点の欠落', '要約で原文の要点が抜けている', '要約を1題、要点を先に箇条書きしてから書く', '#/papers'],
+    form: ['字数・形式', '字数の過不足、指定語の使い忘れ、下線など', '字数を数えながら作文を1題', '#/translate'],
+  };
+  // 添削の記録：fb[key] = [{ d, score, max, tags, weak, kind, text }]（新しいものが後ろ）
+  let fb = store.get('fb', {});
+  const saveFb = () => store.set('fb', fb);
+
   // Claude への添削依頼の文章
   function gradePrompt(o) {
     const L = [
-      'あなたは中国語検定試験（日本中国語検定協会）の1級・準1級の採点者で、日本語を母語とする学習者を長く教えてきた中国語教師です。次の解答を本番の基準で採点し、添削してください。',
+      'あなたは中国語検定試験（日本中国語検定協会）の1級・準1級の採点者で、日本語を母語とする学習者を長く教えてきた中国語教師です。次の解答を本番の基準で採点し、学習者が次に生かせるように添削してください。',
       '',
       `■ 問題：${o.title}（${o.kind}・${o.pts}点）`,
     ];
@@ -360,24 +362,112 @@ window.Study = function Study(ctx) {
       `■ 学習者の解答（Apple Pencil の手書きを iPad のスクリブルで文字にしたもの。答えは${o.lang === 'ja' ? '日本語' : '中国語（簡体字）'}）`,
       o.answer && o.answer.trim() ? o.answer.trim() : '（未記入）',
       '',
-      '■ 出してほしいもの',
-      '1. 誤りの一覧：1つずつ「誤り → 正しい形 → 理由（意味のずれ・文法・語彙・コロケーション・語順・和製漢語など）」。誤字、繁体字や日本の字体の混用、字数、指定語の使い方も確かめる',
-      '2. 観点ごとの点数と、減点の理由',
-      '3. 学習者の解答をできるだけ生かして直した全文',
-      '4. 次に気をつける点（2〜3点）',
-      `5. 最後の行に「SCORE: 点数 / ${o.pts}」とだけ書く`,
+      '■ 次の順に、日本語で書いてください',
+      '1. 総評（1〜2行）',
+      '2. 誤りの一覧：1つずつ「該当箇所 → 正しい形 → なぜそうなるか」。理由は暗記ではなく理解できるように、語の成り立ち（字の意味）・文法の決まり・コロケーション・日本語との違いから説明する。各項目の最後に、下のタグを［colloc］のように付ける',
+      '3. よかった点（伸ばすべき所を1〜2点）',
+      '4. 弱点の診断：この解答から分かる弱い所を、重い順に3つまで。「この箇所が弱い」と具体的に',
+      '5. 次の練習：弱点ごとに、何をどう練習すればよいか（例：コロケーションなら、同じ動詞と組む名詞を5つ書く）',
+      '6. 覚える表現：この問題で身につけたい語・表現を3〜5個（ピンイン・意味・短い例文）',
+      '7. 学習者の解答をできるだけ生かして直した全文',
+      '',
+      '■ タグ（誤りの分類。この中から選ぶ）',
+      ...Object.entries(FB_TAGS).map(([k, v]) => `- ${k}：${v[0]}（${v[1]}）`),
+      '',
+      '■ 最後に、アプリに読み込むための結果を、次の形のまま付けてください（各行1行、ほかの文は入れない）',
+      '=== RESULT ===',
+      `SCORE: 点数/${o.pts}`,
+      'TAGS: タグ=件数, タグ=件数（誤りがなければ none）',
+      'WEAK: 一番の弱点を1行で',
+      'WORDS: 語|ピンイン|意味; 語|ピンイン|意味（4.・6. のうち書けるようにしたい中国語を3〜5個）',
+      '=== END ===',
       '',
       '解答例と言い方が違うだけなら減点しないでください。意味のずれ、文法・語彙の誤り、不自然さを減点してください。スクリブルの読み取りミスと思われる字（形の似た別の字）は「読み取りミス？」として指摘し、減点は控えめにしてください。',
     );
     return L.join('\n');
   }
+  // Claude の返答から結果を読む。RESULT ブロックがなければ SCORE の行だけ拾う
+  function parseResult(text) {
+    const t = String(text || '').replace(/\r/g, '');
+    const m = /=+\s*RESULT\s*=+([\s\S]*?)(?:=+\s*END\s*=+|$)/i.exec(t);
+    const body = m ? m[1] : t;
+    const line = (k) => { const r = new RegExp(`^\\s*\\**${k}\\**\\s*[:：]\\s*(.+)$`, 'im').exec(body); return r ? r[1].trim() : ''; };
+    const sc = /(\d+(?:\.\d+)?)\s*[/／]\s*(\d+(?:\.\d+)?)/.exec(line('SCORE') || (/SCORE\s*[:：]\s*([^\n]+)/i.exec(t) || [])[1] || '');
+    const tags = {};
+    (line('TAGS') || '').split(/[,，、;；]/).forEach((x) => {
+      const r = /([a-z]+)\s*(?:[=×x:：]\s*(\d+))?/i.exec(x.trim());
+      if (r && FB_TAGS[r[1].toLowerCase()]) tags[r[1].toLowerCase()] = (tags[r[1].toLowerCase()] || 0) + (+r[2] || 1);
+    });
+    const words = (line('WORDS') || '').split(/[;；]/).map((x) => x.split(/[|｜]/).map((y) => y.trim())).filter((x) => x[0] && Ink.chars(x[0]).some(Ink.isHan));
+    return { ok: !!sc, score: sc ? +sc[1] : null, max: sc ? +sc[2] : null, tags, weak: line('WEAK'), words, block: !!m };
+  }
+  // 添削の結果を貼り付ける所。o: { key, kind, max, title, onScore(score) }
+  const results = {};
+  function resultHTML(o) {
+    const id = `r${++promptN}`;
+    results[id] = o;
+    const last = (fb[o.key] || []).slice(-1)[0];
+    return `<div class="result-box" data-rbox="${id}">
+        <div class="row"><span class="label">Claude result</span><span class="spacer"></span><button type="button" class="btn sm" data-paste="${id}">Paste result</button></div>
+        <textarea class="answer short paste" data-rin="${id}" placeholder="Claude の返答をここに貼り付け（全文でも、=== RESULT === の部分だけでも）"></textarea>
+        <div class="r-out">${last ? fbSummaryHTML(last, o.max) : ''}</div>
+      </div>`;
+  }
+  function fbSummaryHTML(f, max) {
+    const rate = f.score != null && f.max ? f.score / f.max : null;
+    return `<div class="r-sum">
+        ${f.score != null ? `<span class="r-score ${rate >= 0.7 ? 'ok' : 'ng'}">${f.score} / ${f.max || max}</span>` : ''}
+        <span class="muted small">${esc(f.d)}</span>
+        <div class="chips">${Object.entries(f.tags || {}).map(([k, n]) => `<span class="chip ${n > 1 ? 'warn' : ''}">${esc(FB_TAGS[k] ? FB_TAGS[k][0] : k)} ×${n}</span>`).join('') || '<span class="chip">no errors</span>'}</div>
+        ${f.weak ? `<p class="small"><b>Weak:</b> ${esc(f.weak)}</p>` : ''}
+        ${f.text ? `<details class="ja-det"><summary>添削の全文</summary><div class="fb-text">${esc(f.text)}</div></details>` : ''}
+      </div>`;
+  }
+  function takeResult(id, text) {
+    const o = results[id];
+    const box = app.querySelector(`[data-rbox="${id}"]`);
+    if (!o || !box) return;
+    const r = parseResult(text);
+    const out = box.querySelector('.r-out');
+    if (!r.ok) { out.innerHTML = '<p class="muted small">SCORE が見つかりません。Claude の返答の最後の「=== RESULT ===」の部分を含めて貼り付けてください。</p>'; return; }
+    const entry = { d: todayS(), score: r.score, max: r.max || o.max, tags: r.tags, weak: r.weak, kind: o.kind, title: o.title, text: String(text).slice(0, 8000) };
+    const list = (fb[o.key] = fb[o.key] || []);
+    // 同じ欄で貼り直したときは、追加せずに置き換える
+    if (o.saved != null && list[o.saved]) list[o.saved] = entry;
+    else { list.forEach((x) => { delete x.text; }); o.saved = list.push(entry) - 1; }
+    saveFb();
+    r.words.forEach((w) => addHz(w[0], [w[1], w[2]].filter(Boolean).join(' · '), 'Claude'));
+    out.innerHTML = fbSummaryHTML(entry, o.max) + (r.words.length ? `<p class="muted small">${r.words.length} 語を Hanzi デッキに入れました。</p>` : '');
+    if (o.onScore) o.onScore(r.score);
+    toast('Result saved');
+  }
+  app.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-paste]');
+    if (!b) return;
+    const ta = app.querySelector(`[data-rin="${b.dataset.paste}"]`);
+    try {
+      const t = await navigator.clipboard.readText();
+      if (t) { ta.value = t; takeResult(b.dataset.paste, t); return; }
+    } catch (err) { /* 読めないときは欄に直接貼り付けてもらう */ }
+    ta.focus();
+    toast('欄に貼り付けてください');
+  });
+  app.addEventListener('input', (e) => {
+    const ta = e.target.closest && e.target.closest('[data-rin]');
+    if (!ta) return;
+    clearTimeout(ta._t);
+    ta._t = setTimeout(() => { if (/SCORE/i.test(ta.value)) takeResult(ta.dataset.rin, ta.value); }, 400);
+  });
+  // 設問ごとの最新の点数
+  const lastScore = (key) => { const f = (fb[key] || []).slice(-1)[0]; return f ? f.score : null; };
+
   const prompts = {};
   let promptN = 0;
   function claudeHTML(build) {
     const id = `g${++promptN}`;
     prompts[id] = build;
     return `<div class="claude-box"><button type="button" class="btn accent" data-claude="${id}">Claude で添削</button><button type="button" class="btn" data-copy="${id}">Copy</button>
-      <span class="muted small">共有シートで Claude を選ぶ → 返ってきた SCORE を点数欄へ</span></div>`;
+      <span class="muted small">共有シートで Claude を選ぶ → 返ってきた返答をコピーして、下の Paste result へ</span></div>`;
   }
   async function copyText(text) {
     try { await navigator.clipboard.writeText(text); return true; } catch (e) {
@@ -434,9 +524,9 @@ window.Study = function Study(ctx) {
     }).join('');
     const reasonHTML = st.choice && !st.shown && !st.opts.noReason && !it.write
       ? `<div class="why-pick"><div class="label">Why this answer?</div><div class="chips">${REASONS.map(([k, l]) => `<button class="chip" data-reason="${k}">${l}</button>`).join('')}</div></div>` : '';
-    const writeHTML = it.write ? `<div class="wbox"></div>${st.shown ? '' : st.revealed
-      ? '<div class="actions"><span class="spacer"></span><button class="btn" data-self="0">✗ Wrong</button><button class="btn primary" data-self="1">✓ Correct</button></div>'
-      : '<div class="actions"><span class="muted small">ピンインと意味から、マスに手で書く</span><span class="spacer"></span><button class="btn primary" id="wreveal">Reveal</button></div>'}` : '';
+    const writeHTML = it.write ? (st.shown
+      ? `<p class="muted">あなた：<span class="serif">${esc(st.wv || '（空欄）')}</span></p>`
+      : '<div class="wbox"></div><div class="actions"><span class="muted small">ピンインと意味から、Apple Pencil で書く</span><span class="spacer"></span><button class="btn primary" id="wcheck">Check</button></div>') : '';
     return `<div class="qcard">
         <div class="row"><span class="chip">${st.i + 1} / ${st.list.length}</span>${it.tag ? `<span class="chip">${TAGS[it.tag] || it.tag}</span>` : ''}<span class="spacer"></span>${st.opts.label ? `<span class="muted small">${esc(st.opts.label(it))}</span>` : ''}</div>
         ${it.listen && !it.q ? '' : `<div class="q">${esc(it.q || '')}</div>`}
@@ -505,16 +595,9 @@ window.Study = function Study(ctx) {
         if (mr.top < pr.top + 40 || mr.bottom > pr.bottom - 40) L.scrollTo({ top: L.scrollTop + mr.top - pr.top - L.clientHeight / 3, behavior: 'smooth' });
       }
     }
-    // 手で書く設問（チェックポイントの Writing）：マス目は設問の間そのまま残す
+    // 書く設問（チェックポイントの Writing）：スクリブルで書き、解答と自動で照合する
     const wb = container.querySelector('.wbox');
-    if (wb) {
-      if (!st.wg || st.wg.id !== st.id) {
-        const h = document.createElement('div');
-        st.wg = { id: st.id, host: h, api: Ink.grid(h, { cols: Ink.chars(it.write).length, rows: 1, cell: 96, fixed: true, grow: false }) };
-      }
-      wb.appendChild(st.wg.host);
-      if (st.revealed) st.wg.api.reveal(it.write);
-    }
+    if (wb) scribbleInput(wb, { short: true, noChecks: true, text: () => st.wv || '', setText: (v) => { st.wv = v; }, placeholder: `${Ink.chars(it.write).length} 字を書く` });
     bindQ(container, it);
   }
 
@@ -532,22 +615,21 @@ window.Study = function Study(ctx) {
     }));
     container.querySelectorAll('[data-reason]').forEach((b) => b.addEventListener('click', () => { st.reason = b.dataset.reason; reveal(); renderMC(container); }));
     container.querySelectorAll('[data-cause]').forEach((b) => b.addEventListener('click', () => { st.cause = b.dataset.cause; setCause(st.id, st.cause); renderMC(container); }));
-    const wr = container.querySelector('#wreveal');
-    if (wr) wr.addEventListener('click', () => { st.revealed = true; renderMC(container); });
-    container.querySelectorAll('[data-self]').forEach((b) => b.addEventListener('click', () => {
-      const good = b.dataset.self === '1';
+    const wc = container.querySelector('#wcheck');
+    if (wc) wc.addEventListener('click', () => {
+      const good = same(st.wv || '', it.write);
       st.choice = good ? it.ans : it.ans === 1 ? 2 : 1;
       if (!good) addHz(it.write, it.q, 'Checkpoint');
       reveal();
       renderMC(container);
-    }));
+    });
     const mine = container.querySelector('.mine');
     if (mine) mine.addEventListener('input', () => { qa[st.id] = qa[st.id] || { h: [] }; qa[st.id].mine = mine.value; save(); });
     const nx = container.querySelector('#next');
     if (nx) nx.addEventListener('click', () => {
       tts.stop();
       if (st.i + 1 < st.list.length) {
-        Object.assign(st, { i: st.i + 1, choice: 0, reason: '', shown: false, cause: '', script: false, revealed: false, wg: null });
+        Object.assign(st, { i: st.i + 1, choice: 0, reason: '', shown: false, cause: '', script: false, wv: '' });
         renderMC(container);
         const top = container.querySelector('.pane-r');
         if (top && top.getBoundingClientRect().top < 0) window.scrollTo(0, 0);
@@ -666,8 +748,9 @@ window.Study = function Study(ctx) {
     Ink.pad($('.memo-pad'), { key: `${key}|memo`, ratio: 0.9 });
     countdown($('#t15'), '15:00 Start', 15, s._t = s._t || {});
     scribbleInput($('#ans'), { limit: lim, text: () => texts[key] || '', setText: (v) => { texts[key] = v; save(); }, placeholder: `要約（${lim[0]}〜${lim[1]}字）を Apple Pencil で書く` });
+    const name = `${title(pid)} ${SEC_NAME[s.id]}`;
     const prompt = () => gradePrompt({
-      title: `${title(pid)} ${SEC_NAME[s.id]}`, kind: '聞いて要約', pts: s.pts, limit: lim,
+      title: name, kind: '聞いて要約', pts: s.pts, limit: lim,
       instr: `中国語の文章を聞き、その内容を${lim[0]}字以上${lim[1]}字以内の中国語に要約する問題（15分）。`,
       passage: p.zh, points: s.guide && s.guide.points, model: s.model, rubric: SUM_RUBRIC, answer: texts[key], lang: 'zh',
     });
@@ -677,9 +760,10 @@ window.Study = function Study(ctx) {
       $('#after-l').innerHTML = shown ? `<div class="pbox"><div class="label">Script</div><div class="zh-text">${esc(p.zh || '')}</div>${p.ja ? `<details class="ja-det"><summary>日本語訳</summary><div>${esc(p.ja)}</div></details>` : ''}${(p.vocab || []).map(vocabLine).join('')}</div>` : '';
       $('#after-r').innerHTML = shown ? `
         ${claudeHTML(prompt)}
+        ${resultHTML({ key, kind: 'summary', max: s.pts, title: name, onScore: (v) => { const i = $('#rscore'); if (i) i.value = v; } })}
         <div class="ex-block"><div class="label">Model</div>${tapHTML(s.model || '', `${pid} ${s.id}`)}</div>
         ${s.guide ? guideHTML(s.guide) : ''}
-        ${rubricHTML(SUM_RUBRIC, s.pts)}` : '';
+        ${rubricHTML(SUM_RUBRIC, s.pts, lastScore(key))}` : '';
       bindRubric(pid, s.id, s.pts);
     });
   }
@@ -690,10 +774,10 @@ window.Study = function Study(ctx) {
       ${g.phrases ? `<div class="label" style="margin-top:10px">Useful</div>${g.phrases.map((x) => `<p><b class="serif">${esc(x[0])}</b> — ${esc(x[1])}</p>`).join('')}` : ''}
       ${g.trim ? `<p class="muted">${esc(g.trim)}</p>` : ''}</div>`;
   }
-  // 点数：Claude の SCORE を入れるか、観点にチェックして合計する
-  function rubricHTML(rows, max) {
+  // 点数：Claude の SCORE（貼り付けると自動で入る）、自動採点の点、または観点の合計
+  function rubricHTML(rows, max, preset) {
     return `<div class="ex-block rubric"><div class="label">Score</div>${rows.map(([t, p], i) => `<label class="rrow"><input type="checkbox" data-rp="${p}" data-ri="${i}"> <span>${esc(t)}</span><span class="muted">${p}</span></label>`).join('')}
-      <div class="actions"><label class="score-in"><input type="number" id="rscore" min="0" max="${max}" step="1" inputmode="numeric" placeholder="0"> / ${max}</label><span class="muted small">Claude の SCORE（設問が複数なら合計）、または観点の合計</span><span class="spacer"></span><button class="btn primary" id="rsave">Save score</button></div></div>`;
+      <div class="actions"><label class="score-in"><input type="number" id="rscore" min="0" max="${max}" step="1" inputmode="numeric" placeholder="0" value="${preset == null || preset === '' ? '' : preset}"> / ${max}</label><span class="muted small">Claude の SCORE・自動採点が入ります（直せます）</span><span class="spacer"></span><button class="btn primary" id="rsave">Save score</button></div></div>`;
   }
   function bindRubric(pid, sec, max) {
     const boxes = [...app.querySelectorAll('[data-rp]')];
@@ -717,7 +801,7 @@ window.Study = function Study(ctx) {
   const wordsRule = (x) => (x.words.length > 3 && x.limit[1] > 100 ? '3つ以上' : 'すべて');
   const SUM_RUBRIC = [['内容：原文の要点（話題・展開・結論）を落とさず入れた', 20], ['構成：要点のつながりが接続表現で明確', 6], ['正確さ：文法・語彙・誤字がない', 10], ['形式：字数が範囲内、字体を混用していない', 4]];
 
-  // 書き取り（全文を聞き、指定の5か所を漢字で書く）
+  // 1字ずつの差分。miss は解答例のうち書けていない字の位置
   function diffChars(mine, model) {
     const a = [...String(mine).replace(/\s/g, '')];
     const b = [...String(model).replace(/\s/g, '')];
@@ -729,21 +813,28 @@ window.Study = function Study(ctx) {
     }
     const ok = hit.filter(Boolean).length;
     const extra = a.length - ok;
-    return { html: b.map((c, k) => (hit[k] ? esc(c) : `<mark>${esc(c)}</mark>`)).join(''), miss: b.length - ok, extra };
+    return { html: b.map((c, k) => (hit[k] ? esc(c) : `<mark>${esc(c)}</mark>`)).join(''), miss: b.length - ok, extra, missIdx: b.map((c, k) => (hit[k] ? -1 : k)).filter((k) => k >= 0) };
   }
+  // 書けなかった字（漢字だけ）を、前後の文脈つきで Hanzi デッキに入れる
+  function hzFromDiff(d, model, src, prompt) {
+    const m = Ink.chars(model);
+    d.missIdx.forEach((i) => { if (Ink.isHan(m[i])) addHz(m[i], prompt || snippet(model, i), src); });
+  }
+
+  // 書き取り（全文を聞き、指定の5か所を漢字で書く）。スクリブルで書き、解答例と1字ずつ自動で照合する
   function viewDictation(pid, s, head) {
     const p = (s.passages || [])[0] || {};
     let shown = false;
-    let inputs = {};
     app.innerHTML = `${head}
       <div class="split write">
         <div class="pane-l">
           <div class="pbox"><div class="row"><button class="btn sm" data-tts="all">▶ Whole text</button><button class="btn sm" data-stop>■</button>${rateSel()}</div>
             <p class="muted small" style="margin:8px 0 0">本番は4回：全文 → 5か所を区切って2回 → 全文</p></div>
+          <div class="memo"><div class="label">Memo</div><div class="memo-pad"></div></div>
           <div id="after-l"></div>
         </div>
         <div class="pane-r">
-          <div class="row wbar">${modeSwitch()}<span class="spacer"></span><button class="btn" id="show">Check</button></div>
+          <div class="row wbar"><span class="label">Apple Pencil で書く（スクリブル）</span><span class="spacer"></span><button class="btn" id="show">Check</button></div>
           ${s.tasks.map((t) => `<div class="wtask" data-t="${t.n}"><div class="row"><span class="label">(${t.n}) · ${t.pts} pts</span><span class="spacer"></span><button class="btn sm" data-tts="t${t.n}">▶</button></div>
             <div class="t-in"></div><div class="t-after"></div></div>`).join('')}
           <div id="rub"></div>
@@ -753,52 +844,48 @@ window.Study = function Study(ctx) {
     const texts2 = { all: p.zh };
     s.tasks.forEach((t) => { texts2[`t${t.n}`] = t.model; });
     bindTTS(app, texts2);
+    Ink.pad($('.memo-pad'), { key: `${pid}|${s.id}|memo`, ratio: 0.6 });
     const src = `${pid} ${s.id}`;
-    const mount = () => {
-      s.tasks.forEach((t) => {
-        const key = `${pid}|${s.id}|${t.n}`;
-        inputs[t.n] = penInput(app.querySelector(`[data-t="${t.n}"] .t-in`), {
-          key: `${key}|ink`, fit: Ink.chars(t.model).length + 2, short: true, text: () => texts[key] || '', setText: (v) => { texts[key] = v; save(); }, placeholder: '漢字で書き取る',
-          onMark: (i, on, ch) => { if (!Ink.isHan(ch || '')) return; if (on) addHz(ch, snippet(t.model, i), src); else removeHz(ch, snippet(t.model, i)); },
-        });
-        if (shown) Promise.resolve(inputs[t.n].g && inputs[t.n].g.ready).then(() => inputs[t.n].reveal(t.model));
-      });
-      after();
-    };
-    const after = () => {
+    s.tasks.forEach((t) => {
+      const key = `${pid}|${s.id}|${t.n}`;
+      scribbleInput(app.querySelector(`[data-t="${t.n}"] .t-in`), { short: true, noChecks: true, text: () => texts[key] || '', setText: (v) => { texts[key] = v; save(); }, placeholder: '聞こえた文を漢字で書く' });
+    });
+    $('#show').addEventListener('click', () => {
+      shown = !shown;
+      $('#show').textContent = shown ? 'Hide' : 'Check';
+      let est = 0;
       s.tasks.forEach((t) => {
         const key = `${pid}|${s.id}|${t.n}`;
         const box = app.querySelector(`[data-t="${t.n}"] .t-after`);
         if (!shown) { box.innerHTML = ''; return; }
-        const d = wmode === 'key' ? diffChars(texts[key] || '', t.model) : null;
-        box.innerHTML = `${d ? `<div class="src diff">${d.html}</div><p class="muted small">${d.miss ? `${d.miss} 字の聞き落とし・誤り` : '全文一致'}${d.extra ? ` · 余分な字 ${d.extra}` : ''}</p>` : '<p class="muted small hint">解答例が薄く重なります。違う字のマスを押して × を付けると Hanzi デッキに入ります。</p>'}
+        const mine = texts[key] || '';
+        const d = diffChars(mine, t.model);
+        // 1字の置き換えは「抜け1・余分1」と出るので、多い方を誤りの数とみなす
+        const pts = Math.max(0, t.pts - 2 * Math.max(d.miss, d.extra));
+        est += pts;
+        if (norm(mine)) hzFromDiff(d, t.model, src); // 手を付けていない設問の字までは入れない
+        box.innerHTML = `<div class="src diff">${d.html}</div>
+          <p class="small"><span class="${d.miss || d.extra ? 'ng' : 'ok'}">${d.miss || d.extra ? '✗' : '✓'}</span> ${d.miss ? `${d.miss} 字の聞き落とし・誤り` : '全文一致'}${d.extra ? ` · 余分な字 ${d.extra}` : ''} · 目安 ${pts} / ${t.pts}${d.missIdx.length ? ' · 書けなかった字は Hanzi へ' : ''}</p>
           ${t.note ? `<p class="small">${esc(t.note)}</p>` : ''}${(t.vocab || []).map(vocabLine).join('')}`;
       });
       $('#after-l').innerHTML = shown ? `<div class="pbox"><div class="label">Script</div><div class="zh-text">${esc(p.zh || '')}</div>${p.ja ? `<details class="ja-det"><summary>日本語訳</summary><div>${esc(p.ja)}</div></details>` : ''}${(p.vocab || []).map(vocabLine).join('')}</div>` : '';
-      $('#rub').innerHTML = shown ? rubricHTML(s.tasks.map((t) => [`(${t.n}) 全文正確（誤字1字につき減点されるので、1字でも違えば外す）`, t.pts]), s.pts) : '';
+      $('#rub').innerHTML = shown ? rubricHTML(s.tasks.map((t) => [`(${t.n}) 全文正確（1字の誤り・抜け・余分ごとに2点引きの目安）`, t.pts]), s.pts, est) : '';
       bindRubric(pid, s.id, s.pts);
-    };
-    mount();
-    bindModeSwitch($('.wbar'), mount);
-    $('#show').addEventListener('click', () => {
-      shown = !shown;
-      $('#show').textContent = shown ? 'Hide' : 'Check';
-      s.tasks.forEach((t) => inputs[t.n].reveal(shown ? t.model : null));
-      after();
     });
   }
 
   // 翻訳（中文日訳・日文中訳）・作文・ピンインの漢字書き
-  // 記述（翻訳・作文）はスクリブルで書いて Claude で添削。ピンインの漢字書きは字形を見るのでマス目に書く
+  // すべてスクリブルで書く。翻訳・作文は Claude で添削し、ピンインの漢字書きは解答例と自動で照合する
   function viewWrite(pid, s, head) {
     const p = (s.passages || [])[0];
     const shown = {};
-    const inputs = {};
+    const shortOk = {};
     const src = `${pid} ${s.id}`;
     const ja = (t) => s.type === 'zhja' && !t.short; // 日本語で答える
     const kind = (t) => (t.short ? 'ピンインを漢字に' : t.words ? '作文' : s.type === 'zhja' ? '中文日訳' : '日文中訳');
+    const tkey = (t) => `${pid}|${s.id}|${t.n}`;
     const block = (t, withSrc) => `<div class="wtask" data-t="${t.n}">
-        <div class="label">(${t.n}) · ${t.pts} pts${t.short ? ' · Pencil' : ''}</div>
+        <div class="label">(${t.n}) · ${t.pts} pts</div>
         ${withSrc ? `<div class="src">${esc(t.src)}</div>` : ''}
         <div class="t-in"></div>
         <div class="actions"><span class="spacer"></span><button class="btn" data-show="${t.n}">Check</button></div>
@@ -813,43 +900,55 @@ window.Study = function Study(ctx) {
       <div id="rub"></div>`;
     const $ = (q) => app.querySelector(q);
     s.tasks.forEach((t) => {
-      const key = `${pid}|${s.id}|${t.n}`;
       const host = app.querySelector(`[data-t="${t.n}"] .t-in`);
-      const n = Ink.chars(t.model).length;
-      inputs[t.n] = t.short
-        ? penInput(host, {
-          key: `${key}|ink`, forcePen: true, cols: n, rows: 1, cell: 76, fixed: true, grow: false,
-          onMark: (i, on, ch) => { if (!Ink.isHan(ch || '')) return; if (on) addHz(ch, `${t.src}`, src); else removeHz(ch, `${t.src}`); },
-        })
-        : scribbleInput(host, {
-          lang: ja(t) ? 'ja' : 'zh-CN', limit: t.limit, words: t.words,
-          text: () => texts[key] || '', setText: (v) => { texts[key] = v; save(); },
-          placeholder: t.words ? '作文を Apple Pencil で書く' : ja(t) ? '日本語訳を Apple Pencil で書く' : '中国語訳を Apple Pencil で書く',
-        });
+      scribbleInput(host, {
+        lang: ja(t) ? 'ja' : 'zh-CN', limit: t.limit, words: t.words, short: t.short, noChecks: t.short,
+        text: () => texts[tkey(t)] || '', setText: (v) => { texts[tkey(t)] = v; save(); },
+        placeholder: t.short ? '漢字（簡体字）を Apple Pencil で書く' : t.words ? '作文を Apple Pencil で書く' : ja(t) ? '日本語訳を Apple Pencil で書く' : '中国語訳を Apple Pencil で書く',
+      });
     });
+    // 大問の点数：ピンインの漢字書きは自動採点、ほかは Claude の SCORE
+    const preset = () => {
+      let known = false;
+      const sum = s.tasks.reduce((a, t) => {
+        if (t.short) { if (t.n in shortOk) { known = true; return a + (shortOk[t.n] ? t.pts : 0); } return a; }
+        const v = lastScore(tkey(t));
+        if (v != null) { known = true; return a + v; }
+        return a;
+      }, 0);
+      return known ? sum : '';
+    };
     const prompt = (t) => () => gradePrompt({
       title: `${title(pid)} ${SEC_NAME[s.id]} (${t.n})`, kind: kind(t), pts: t.pts, lang: ja(t) ? 'ja' : 'zh',
       instr: t.words ? 'テーマについて、指定語を使って中国語で文章を書く問題。' : ja(t) ? '本文の下線部を日本語に訳す問題。' : '日本語を中国語に訳す問題。',
       passage: ja(t) && p ? p.zh : '', src: t.words ? '' : t.src, ...(t.words ? { instr: t.src, words: t.words, wordsRule: wordsRule(t), limit: t.limit } : {}),
-      model: t.model, alt: t.alt, rubric: writeRubric(s, t), answer: texts[`${pid}|${s.id}|${t.n}`],
+      model: t.model, alt: t.alt, rubric: writeRubric(s, t), answer: texts[tkey(t)],
     });
     const after = (t) => {
       const on = shown[t.n];
       const target = app.querySelector(`[data-tl="${t.n}"]`) || app.querySelector(`[data-t="${t.n}"] .t-after`);
       const modelHTML = !ja(t) && !t.short ? tapHTML(t.model, src) : `<div class="src">${esc(t.model)}</div>`;
+      let head2 = '';
+      if (on && t.short) {
+        const mine = texts[tkey(t)] || '';
+        shortOk[t.n] = same(mine, t.model);
+        if (!shortOk[t.n]) hzFromDiff(diffChars(mine, t.model), t.model, src, t.src);
+        head2 = `<div class="verdict ${shortOk[t.n] ? 'ok' : 'ng'}">${shortOk[t.n] ? '✓ Correct' : `✗ <span class="serif">${esc(t.model)}</span>`}</div>${shortOk[t.n] ? '' : '<p class="muted small">書けなかった字を Hanzi デッキに入れました。</p>'}`;
+      } else if (on) {
+        head2 = `${claudeHTML(prompt(t))}${resultHTML({ key: tkey(t), kind: kind(t), max: t.pts, title: `${title(pid)} ${SEC_NAME[s.id]} (${t.n})`, onScore: () => { const i = $('#rscore'); if (i) i.value = preset(); } })}`;
+      }
       target.innerHTML = on ? `
-        ${t.short ? '<p class="muted small hint">解答例が薄く重なります。違う字のマスを押して × を付けると Hanzi デッキに入ります。</p>' : claudeHTML(prompt(t))}
+        ${head2}
         <div class="ex-block"><div class="label">Model</div>${modelHTML}</div>
         ${t.note ? `<div class="ex-block"><p>${esc(t.note)}</p></div>` : ''}
         ${t.steps && t.steps.length ? `<div class="ex-block"><div class="label">Step by step</div>${t.steps.map((x) => `<div class="step"><div class="serif">${esc(x[0])}</div><div>→ ${esc(x[1])}</div>${x[2] ? `<div class="muted small">${esc(x[2])}</div>` : ''}</div>`).join('')}</div>` : ''}
         ${t.alt && t.alt.length ? `<div class="ex-block"><div class="label">Other ways</div>${t.alt.map((x) => `<p>${esc(x)}</p>`).join('')}</div>` : ''}
         ${t.pit && t.pit.length ? `<div class="ex-block"><div class="label">Watch out</div>${t.pit.map((x) => `<p>${esc(x)}</p>`).join('')}</div>` : ''}
         ${t.vocab && t.vocab.length ? `<div class="ex-block"><div class="label">Words</div>${t.vocab.map(vocabLine).join('')}</div>` : ''}` : '';
-      if (t.short) inputs[t.n].reveal(on ? t.model : null);
       const js = app.querySelector('.ja-slot');
       if (js && p) js.innerHTML = Object.values(shown).some(Boolean) && p.ja ? `<details class="ja-det"><summary>日本語訳</summary><div>${esc(p.ja)}</div></details>${(p.vocab || []).map(vocabLine).join('')}` : '';
       const any = Object.values(shown).some(Boolean);
-      $('#rub').innerHTML = any ? rubricHTML(s.tasks.flatMap((x) => writeRubric(s, x)), s.pts) : '';
+      $('#rub').innerHTML = any ? rubricHTML(s.tasks.flatMap((x) => writeRubric(s, x)), s.pts, preset()) : '';
       bindRubric(pid, s.id, s.pts);
     };
     app.querySelectorAll('[data-show]').forEach((b) => b.addEventListener('click', () => {
@@ -910,40 +1009,42 @@ window.Study = function Study(ctx) {
     }));
   }
 
-  // ========== Hanzi（書けなかった字を手で書いて思い出す） ==========
+  // ========== Hanzi（書けなかった字を、スクリブルで書いて思い出す） ==========
+  // お題（文脈の□、またはピンインと意味）を見て書き、解答と自動で照合する
   let hq = null;
-  let hshow = false;
-  let hg = null;
+  let hval = '';
+  let hres = null; // null: まだ / true: 正解 / false: 不正解
   function viewHanzi(container, headHTML) {
     const ids = Object.keys(hz);
     if (!ids.length) {
-      container.innerHTML = `${headHTML}<div class="empty narrow-t">手で書けなかった字がここに集まります。<br><span class="small">書き取り・ピンインの漢字書きで × を付けたマス、要約・翻訳の解答例で押した字、語彙の ✎、チェックポイントの Writing で間違えた語。</span></div>`;
+      container.innerHTML = `${headHTML}<div class="empty narrow-t">書けなかった字がここに集まります。<br><span class="small">書き取り・ピンインの漢字書きで間違えた字、要約・翻訳の解答例で押した字、語彙の ✎、Claude の添削で挙がった語、チェックポイントの Writing で間違えた語。</span></div>`;
       return;
     }
     if (!hq) hq = hzDue().sort((a, b) => hz[a].due.localeCompare(hz[b].due));
     if (!hq.length) {
       const next = ids.map((id) => hz[id].due).sort()[0];
-      container.innerHTML = `${headHTML}<div class="complete"><span class="seal">完</span><div class="word">Done.</div><p class="muted">${ids.length} characters · next ${next}</p></div>`;
+      container.innerHTML = `${headHTML}<div class="complete"><span class="seal">完</span><div class="word">Done.</div><p class="muted">${ids.length} items · next ${next}</p></div>`;
       return;
     }
     const id = hq[0];
     const x = hz[id];
+    const d = hres === false ? diffChars(hval, x.t) : null;
     container.innerHTML = `${headHTML}
       <div class="card hzcard">
         <span class="chip cat">${esc(x.src || 'Hanzi')}</span>
         <div class="hz-prompt ${/□/.test(x.prompt) ? 'serif' : ''}">${esc(x.prompt)}</div>
-        <div class="hz-grid"></div>
-        ${hshow ? `<div class="hz-ans serif">${esc(x.t)}</div>` : '<div class="tap">WRITE WITH APPLE PENCIL</div>'}
+        ${hres === null ? '<div class="hz-in"></div><div class="tap">WRITE WITH APPLE PENCIL</div>'
+          : `<div class="verdict ${hres ? 'ok' : 'ng'}">${hres ? '✓ Correct' : '✗'}</div>
+            <div class="hz-ans serif diff">${d ? d.html : esc(x.t)}</div>
+            ${hres ? '' : `<p class="muted">あなた：<span class="serif">${esc(hval || '（空欄）')}</span></p>`}`}
       </div>
-      ${hshow ? '<div class="grade"><button class="btn" data-g="0">Again</button><button class="btn primary" data-g="1">Good</button></div>' : '<div class="grade one"><button class="btn primary" id="hrev">Reveal</button></div>'}`;
-    if (!hg || hg.id !== id) {
-      const h = document.createElement('div');
-      hg = { id, host: h, api: Ink.grid(h, { cols: Ink.chars(x.t).length, rows: 1, cell: 120, fixed: true, grow: false }) };
+      ${hres === null ? '<div class="grade one"><button class="btn primary" id="hcheck">Check</button></div>'
+        : `<div class="grade"><button class="btn" data-g="${hres ? 0 : 1}">${hres ? 'Again' : 'Count as correct'}</button><button class="btn primary" data-g="${hres ? 1 : 0}">Next</button></div>`}`;
+    if (hres === null) {
+      const inp = scribbleInput(container.querySelector('.hz-in'), { short: true, noChecks: true, text: () => hval, setText: (v) => { hval = v; }, placeholder: `${Ink.chars(x.t).length} 字を書く` });
+      inp.el.classList.add('center');
+      container.querySelector('#hcheck').addEventListener('click', () => { hres = same(hval, x.t); viewHanzi(container, headHTML); });
     }
-    container.querySelector('.hz-grid').appendChild(hg.host);
-    if (hshow) hg.api.reveal(x.t);
-    const rv = container.querySelector('#hrev');
-    if (rv) rv.addEventListener('click', () => { hshow = true; viewHanzi(container, headHTML); });
     container.querySelectorAll('[data-g]').forEach((b) => b.addEventListener('click', () => {
       const ok = b.dataset.g === '1';
       const nb = ok ? Math.min(INT.length - 1, x.b + 1) : 0;
@@ -951,8 +1052,8 @@ window.Study = function Study(ctx) {
       save();
       hq.shift();
       if (!ok) hq.push(id);
-      hshow = false;
-      hg = null;
+      hval = '';
+      hres = null;
       viewHanzi(container, headHTML);
     }));
   }
@@ -1130,6 +1231,8 @@ window.Study = function Study(ctx) {
     const wr = A.areas.find((a) => a.k === 'writing');
     if (wr && wr.acc < 0.7) out.push('手で書く力が弱めです。本番の記述（中訳・要約・書き取り）はすべて手書きなので、読める字でも書けないと減点されます。Hanzi デッキを毎日10字、Apple Pencil で書いてください。');
     if (n === 2 && A.total < 0.7) out.push('インプット期の終わりの時点で7割に届いていません。翻訳（アウトプット）の開始を2週間遅らせ、その分をインプットに回すことを勧めます。');
+    const W = fbStats(30);
+    if (W.tags.length) out.push(`Claude の添削で多い誤り（直近30日）：${W.tags.slice(0, 3).map(([t, n]) => `${FB_TAGS[t][0]} ${n}件`).join('、')}。Today の Writing focus で集中して直します。`);
     if (A.prev != null) out.push(`前回の CP から ${A.total >= A.prev ? '+' : ''}${Math.round((A.total - A.prev) * 100)} ポイント。`);
     return out;
   }
@@ -1193,6 +1296,25 @@ window.Study = function Study(ctx) {
     const papers = IDX.papers.map((m) => ({ m, s: paperScore(m.id) })).filter((x) => x.s.l != null || x.s.w != null);
     return { tags, causes, week, papers, weakest: tags.find((t) => t.n >= 5) };
   }
+  // Claude の添削の集計：直近 days 日のタグ別件数、最近の得点率、最近の弱点
+  function fbStats(days = 30) {
+    const from = addDays(todayS(), -days);
+    const all = Object.entries(fb).flatMap(([k, list]) => list.map((x) => ({ ...x, k }))).sort((a, b) => a.d.localeCompare(b.d));
+    const tags = {};
+    all.filter((x) => x.d > from).forEach((x) => Object.entries(x.tags || {}).forEach(([t, n]) => { tags[t] = (tags[t] || 0) + n; }));
+    const recent = all.filter((x) => x.score != null && x.max).slice(-10);
+    const rate = recent.length ? recent.reduce((a, x) => a + x.score / x.max, 0) / recent.length : null;
+    return { all, tags: Object.entries(tags).sort((a, b) => b[1] - a[1]), rate, weak: all.filter((x) => x.weak).slice(-3).reverse() };
+  }
+  function writingHTML() {
+    const W = fbStats(30);
+    if (!W.all.length) return '';
+    const top = W.tags.length ? W.tags[0][1] : 1;
+    return `<h2 class="section label">Writing · Claude</h2>
+      <div class="stats"><span class="chip">${W.all.length} reviews</span>${W.rate != null ? `<span class="chip ${W.rate >= 0.7 ? '' : 'accent'}">avg ${pct(W.rate)} (last ${Math.min(10, W.all.length)})</span>` : ''}</div>
+      ${W.tags.length ? `<div class="bars">${W.tags.map(([t, n]) => `<div class="bar-row"><div class="row"><span>${esc(FB_TAGS[t][0])}</span><span>${n}</span></div><div class="meter"><i style="width:${(n / top) * 100}%"></i></div></div>`).join('')}</div>` : ''}
+      ${W.weak.length ? `<ul class="plain" style="margin-top:14px">${W.weak.map((x) => `<li>${esc(x.weak)} <span class="muted small">${esc(x.title || '')} · ${esc(x.d)}</span></li>`).join('')}</ul>` : ''}`;
+  }
   function progressHTML() {
     const A = analytics();
     const cps = Object.keys(cpr).map(Number).sort((a, b) => a - b);
@@ -1203,6 +1325,7 @@ window.Study = function Study(ctx) {
       ${cps.length ? `<h2 class="section label">Checkpoints</h2><div class="cp-line">${cps.map((n) => { const a = analyze(n); return `<a href="#/check/${n}/result" class="cp-dot ${CH.targets[n] && a.total < CH.targets[n] ? 'ng' : 'ok'}"><b>${Math.round(a.total * 100)}</b><span>CP${n}</span></a>`; }).join('')}</div>` : ''}
       ${A.papers.length ? `<h2 class="section label">Past papers</h2>${A.papers.map(({ m, s }) => { const p = IDX.pass[m.level]; return `<a class="prow" href="#/papers/${m.id}"><span class="t">${title(m.id)}</span><span class="spacer"></span><span class="${s.l >= p.listening ? 'ok' : 'ng'}">L ${s.l == null ? '–' : s.l}</span>&nbsp;<span class="${s.w >= p.written ? 'ok' : 'ng'}">W ${s.w == null ? '–' : s.w}</span></a>`; }).join('')}` : ''}
       ${A.tags.length ? `<h2 class="section label">By question type</h2><div class="bars">${A.tags.map((t) => `<div class="bar-row"><div class="row"><span>${TAGS[t.k] || t.k}</span><span>${t.ok} / ${t.n}</span></div><div class="meter"><i style="width:${t.acc * 100}%"></i></div></div>`).join('')}</div>` : ''}
+      ${writingHTML()}
       ${A.causes.length ? `<h2 class="section label">Causes of mistakes</h2><div class="bars">${A.causes.map(([c, k]) => `<div class="bar-row"><div class="row"><span>${causeName[c]}</span><span>${k}</span></div><div class="meter"><i style="width:${(k / A.causes[0][1]) * 100}%"></i></div></div>`).join('')}</div>` : ''}`;
   }
 
@@ -1219,9 +1342,18 @@ window.Study = function Study(ctx) {
   // 今日 Hanzi の復習があれば Today に入れる
   function extraTasks(k) {
     if (k !== todayS()) return [];
+    const out = [];
     const n = hzDue().length;
-    if (!n) return [];
-    return [{ key: 'hz', track: 'hz', name: 'Hanzi', min: Math.min(15, 5 + Math.ceil(n / 3)), fixed: `${k}|hz`, link: '#/idioms/hanzi', lines: [{ head: `${n} to write`, meta: 'Apple Pencil · from memory', notes: [] }] }];
+    if (n) out.push({ key: 'hz', track: 'hz', name: 'Hanzi', min: Math.min(15, 5 + Math.ceil(n / 3)), fixed: `${k}|hz`, link: '#/idioms/hanzi', lines: [{ head: `${n} to write`, meta: 'Apple Pencil · from memory', notes: [] }] });
+    // 直近14日の添削で同じ弱点が3回以上出たら、平日にその練習を入れる
+    const d = new Date(ctx.toT(k)).getUTCDay();
+    const top = fbStats(14).tags.find(([, c]) => c >= 3);
+    if (top && d !== 0 && d !== 6 && !ctx.S().rest.includes(d)) {
+      const [t, c] = top;
+      const last = fbStats(14).all.filter((x) => x.tags && x.tags[t] && x.weak).slice(-1)[0];
+      out.push({ key: 'wfocus', track: 'wfocus', name: 'Writing focus', min: 15, fixed: `${k}|wfocus`, link: FB_TAGS[t][3], lines: [{ head: FB_TAGS[t][0], meta: `${c}× in 14 days · Claude`, notes: [FB_TAGS[t][2], ...(last ? [last.weak] : [])] }] });
+    }
+    return out;
   }
   function taskMeta(t) {
     if (t.track === 'mistakes') return `${dueQids().length} due`;
@@ -1259,10 +1391,10 @@ window.Study = function Study(ctx) {
   return {
     viewPapers, viewPaper, viewSection, viewReview, viewVocab, viewGroups, viewHanzi, viewCheck, viewCheckResult, viewDrill,
     viewMethod, viewGuide, progressHTML, focusTasks, extraTasks, taskMeta, taskLink, importFiles,
-    penInput, tapHTML, modeSwitch, bindModeSwitch, scribbleInput, gradePrompt, claudeHTML, hzCount: () => [hzDue().length, Object.keys(hz).length],
+    tapHTML, scribbleInput, gradePrompt, claudeHTML, resultHTML, hzCount: () => [hzDue().length, Object.keys(hz).length],
     stop: () => { tts.stop(); },
-    resetSession: () => { st = null; vq = null; vshow = false; gq = null; hq = null; hshow = false; hg = null; },
-    exportData: () => ({ qa, scores, texts, vsrs, cpq, cpr, focus, hz }),
-    importData: (d) => { qa = d.qa || {}; scores = d.scores || {}; texts = d.texts || {}; vsrs = d.vsrs || {}; cpq = d.cpq || {}; cpr = d.cpr || {}; focus = d.focus || null; hz = d.hz || {}; save(); },
+    resetSession: () => { st = null; vq = null; vshow = false; gq = null; hq = null; hval = ''; hres = null; },
+    exportData: () => ({ qa, scores, texts, vsrs, cpq, cpr, focus, hz, fb }),
+    importData: (d) => { qa = d.qa || {}; scores = d.scores || {}; texts = d.texts || {}; vsrs = d.vsrs || {}; cpq = d.cpq || {}; cpr = d.cpr || {}; focus = d.focus || null; hz = d.hz || {}; fb = d.fb || {}; save(); saveFb(); },
   };
 };

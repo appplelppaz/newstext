@@ -97,7 +97,7 @@
       row(offline.ready, offline.ready ? 'App saved for offline use' : 'Not saved yet', offline.ready ? '' : 'ネットにつないだ状態で一度開くと保存されます。'),
       row(home, home ? 'Home Screen app' : 'Opened in Safari', home ? '' : 'Safari の共有ボタン › 「ホーム画面に追加」で、全画面のアプリとして使えます。'),
       row(offline.persisted === true, `Storage ${est ? `${(est.usage / 1048576).toFixed(1)} MB` : ''}${offline.persisted ? ' · kept' : ''}`, offline.persisted ? '' : '過去問データと手書きは端末に保存されます。ホーム画面に追加すると消されにくくなります。'),
-      `<div class="rrow"><span>✎</span><span>Scribble<div class="muted small">記述問題は Apple Pencil で入力欄に書くと文字になります。設定 › Apple Pencil › スクリブル をオン、設定 › 一般 › キーボード › キーボード に「中国語（簡体字）」を追加してください。</div></span></div>`,
+      `<div class="rrow"><span>✎</span><span>Scribble<div class="muted small">文字を書く所はすべて、Apple Pencil で入力欄に書くと文字になります。設定 › Apple Pencil › スクリブル をオン、設定 › 一般 › キーボード › キーボード に「中国語（簡体字）」を追加してください。</div></span></div>`,
       row(zh.length > 0, zh.length ? `Chinese voice · ${esc(zh.map((v) => v.name).slice(0, 3).join(', '))}` : 'No Chinese voice', zh.length ? '電波がなくても読み上げで聞き取り練習ができます。' : '設定 › アクセシビリティ › 読み上げコンテンツ › 声 › 中国語 で、高音質の声をダウンロードしてください。'),
     ].join('');
   }
@@ -396,7 +396,7 @@
     const dueN = Object.keys(srs).filter((n) => srs[n].due <= today).length;
     const newN = queue.filter((n) => !srs[n]).length;
     const head = `
-      <div class="row" style="margin:6px 0 4px">
+      <div class="row" style="margin:6px 0 4px;flex-wrap:wrap">
         <div class="seg">${[['study', 'Idioms'], ['vocab', 'Vocab'], ['hanzi', 'Hanzi'], ['groups', 'Groups'], ['all', 'All']].map(([m, l]) => `<button data-mode="${m}" class="${idMode === m ? 'on' : ''}">${l}</button>`).join('')}</div>
         <span class="spacer"></span>
         ${idMode === 'study' ? `<span class="chip">New ${newN}</span><span class="chip">Due ${dueN}</span>` : idMode === 'all' ? `<span class="chip">${IDIOMS.length}</span>` : idMode === 'hanzi' ? `<span class="chip">Due ${ST.hzCount()[0]}</span><span class="chip">${ST.hzCount()[1]}</span>` : ''}
@@ -498,6 +498,7 @@
       e.target.textContent = shown ? 'Hide' : 'Show';
       app.querySelector('#tmodel').innerHTML = shown ? `
         ${ST.claudeHTML(prompt)}
+        ${ST.resultHTML({ key: `tr|${n}`, kind: 'translate', max: 10, title: `Translate T${n}` })}
         <div class="label" style="margin-top:20px">Model</div>
         ${zhOut ? ST.tapHTML(x.model, `T${n}`) : `<div class="src">${esc(x.model)}</div>`}
         <div class="label">Points</div>
