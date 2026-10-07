@@ -271,8 +271,8 @@ window.Listen = function Listen(ctx) {
           <div class="row"><span class="label">Sentence ${st.dict.i + 1} / ${list.length} · ${han(s.o).length} 字</span><span class="spacer"></span><button class="btn sm" id="dskip">Skip</button></div>
           <div class="row" style="margin-top:12px"><button class="btn primary" id="dplay">▶ Play</button><button class="btn" id="dctx">▶ with context</button><span class="spacer"></span><span class="muted small">何度聞いてもよい</span></div>
           <div id="din" style="margin-top:12px"></div>
-          ${res ? `<div class="src diff serif">${res.d.html}</div>
-            <p class="small"><span class="${res.miss ? 'ng' : 'ok'}">${res.miss ? '✗' : '✓'}</span> ${res.n - res.miss} / ${res.n} 字${res.extra ? ` · 余分な字 ${res.extra}` : ''}${res.hz && res.hz.length ? ` · Hanzi に追加：${esc(res.hz.join(' '))}` : res.miss ? ' · もう一度聞いて確かめる' : ''}</p>
+          ${res ? `${ST.tapHTML(s.o, `Podcast · ${p.title}`.slice(0, 40), { miss: res.mi, cls: 'diff serif', hint: '印は聞き落とした字。書けない字だけを押すと Hanzi デッキに入ります（もう一度押すと外れる）。' })}
+            <p class="small"><span class="${res.miss ? 'ng' : 'ok'}">${res.miss ? '✗' : '✓'}</span> ${res.n - res.miss} / ${res.n} 字${res.extra ? ` · 余分な字 ${res.extra}` : ''}</p>
             ${s.py ? `<p class="muted small">${esc(s.py)}</p>` : ''}${s.ja ? `<p class="small">${esc(s.ja)}</p>` : ''}${wordsHTML(s)}` : ''}
         </div>
         <div class="grade one">${res ? '<button class="btn primary" id="dnext">Next</button>' : '<button class="btn primary" id="dcheck">Check</button>'}</div>`;
@@ -289,13 +289,10 @@ window.Listen = function Listen(ctx) {
         const miss = p.trad ? d.missIdx.filter((k) => !ST.isTrad(m[k])) : d.missIdx;
         const hm = miss.filter((k) => Ink.isHan(m[k])).length;
         const n = han(s.o).length;
-        res = { d, miss: hm, n, extra: Math.max(0, d.extra - (d.missIdx.length - miss.length)) };
+        res = { d, mi: miss, miss: hm, n, extra: Math.max(0, d.extra - (d.missIdx.length - miss.length)) };
         st.dict.n += n; st.dict.ok += n - hm;
         const g = day(); g.chars += n; g.ok += n - hm; g.sents++;
         save();
-        // Hanzi に入れるのは「ほぼ聞き取れたのに書けなかった字」だけ（1文に3字まで）。半分以上聞き取れなかった文は聞き取りの問題なので入れない
-        res.hz = val.trim() && hm <= n / 2 ? [...new Set(miss.filter((k) => Ink.isHan(m[k])).map((k) => m[k]))].slice(0, 3) : [];
-        if (res.hz.length) ST.hzFromDiff({ ...d, missIdx: miss.filter((k) => res.hz.includes(m[k])) }, s.o, `Podcast · ${p.title}`.slice(0, 40));
         render();
       });
     };
