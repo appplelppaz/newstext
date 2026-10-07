@@ -22,8 +22,8 @@ window.Drill = function Drill(ctx) {
   const CAT2TAG = { 誤訳: 'meaning', 脱落: 'omit', 文法: 'grammar', 語彙: 'meaning', コロケーション: 'colloc', 文体: 'style', 誤字: 'char' };
 
   // ---------- 保存 ----------
-  // st = { cur: {ex, answer, hints, question, attemptId} | {make: {src, meta}} | null, exprs: [], len, srcMode }
-  let st = Object.assign({ cur: null, exprs: [], len: 150, srcMode: 'stock' }, store.get('jz', {}));
+  // st = { cur: {ex, answer, hints, question, attemptId} | {make: {src | url | gen, meta}} | null, exprs: [], len, srcMode }
+  let st = Object.assign({ cur: null, exprs: [], len: 150, srcMode: 'url' }, store.get('jz', {}));
   const save = () => store.set('jz', st);
   const DB = { corpus: [], attempts: [] };
   let ready = false;
@@ -100,6 +100,25 @@ window.Drill = function Drill(ctx) {
       '## 出力',
       '```json のコードブロック1つだけを出力する（説明の文は不要）：',
       OUT_PROBLEM,
+    ].join('\n');
+  }
+  // URL だけを渡し、Claude に記事を開いて本文を取り出してもらう（ブラウザからは他のサイトを読めないため）
+  function promptUrl(url, genre, len) {
+    return [
+      'あなたは中国語検定1級（日本中国語検定協会）の日文中訳問題を作る出題者です。次のURLの中国語の記事を開いて本文を読み、受験者が中国語に訳し戻すための「日本語の問題文」を作ります。',
+      '',
+      '## 記事',
+      `URL：${url}`,
+      `ジャンル：${genre}`,
+      '- ウェブ取得の機能でこのURLを開く。使うのは本文だけで、見出し・メニュー・広告・写真の説明・記者名・「责任编辑」などは除く。',
+      '- 本文は記事のとおりに一字も変えずに使う。記憶や推測で補ったり、要約したりしない。',
+      '- URLが開けない、本文が取れない、本文が中国語でない場合は、問題を作らずに ```json のブロックで {"error":"理由（日本語で短く）"} だけを出力する。',
+      '',
+      ...makeSteps(len),
+      '',
+      '## 出力',
+      '```json のコードブロック1つだけを出力する（説明の文は不要）：',
+      OUT_PROBLEM.replace('{"title"', '{"source_title":"記事の見出し（原文のまま）","title"'),
     ].join('\n');
   }
   function promptGenerate(genre, theme, len) {
@@ -248,7 +267,7 @@ ${(c.question || '').trim() || 'なし'}
 
   // 1. 原文を選ぶ
   function vChoose(host) {
-    const modes = [['stock', 'ストックから'], ['paste', '貼り付け'], ['claude', 'Claude が作成']];
+    const modes = [['url', 'URL'], ['stock', 'ストックから'], ['paste', '本文を貼り付け'], ['claude', 'Claude が作成']];
     const used = new Map();
     DB.attempts.forEach((a) => { if (a.ex.sourceId) used.set(a.ex.sourceId, (used.get(a.ex.sourceId) || 0) + 1); });
     let body = '';
@@ -257,6 +276,11 @@ ${(c.question || '').trim() || 'なし'}
         : '<div class="jz-empty">ストックはまだ空です。「貼り付け」で原文を入れるか、「原文ストック」で先にまとめて登録できます。</div>';
     } else if (st.srcMode === 'paste') {
       body = pasteForm(true);
+    } else if (st.srcMode === 'url') {
+      body = `<p class="muted small">記事のURLを貼って「Claude で出題」を押すと、Claude が記事を開いて本文を取り出し、そのまま問題を作ります。開けないサイトだったときは「本文を貼り付け」を使ってください。</p>
+        <div class="jz-row"><label class="field"><span class="label">記事のURL</span><input type="url" id="uUrl" inputmode="url" autocomplete="off" placeholder="https://opinion.people.com.cn/…"></label>
+        <label class="field"><span class="label">ジャンル</span><select id="uGenre">${GENRES.map((g) => `<option>${g}</option>`).join('')}</select></label></div>
+        <div class="claude-box"><button type="button" class="btn accent" id="uGo">Claude で出題</button><span class="muted small">共有シートで Claude を選ぶ → 返答をコピーして、次の画面の Paste result へ</span></div>`;
     } else {
       body = `<p class="muted small">本物の記事が手元にないときの練習用です。Claude が新聞風の中国語の原文を書き、そこから出題します。できれば実際の記事（貼り付け）を優先してください。</p>
         <div class="jz-row"><label class="field"><span class="label">ジャンル</span><select id="gGenre">${GENRES.map((g) => `<option>${g}</option>`).join('')}</select></label>
@@ -277,10 +301,34 @@ ${(c.question || '').trim() || 'なし'}
       st.cur = { make: { src: x.text, meta: { title: x.title, url: x.url, genre: x.genre, sourceId: x.id } } }; save(); vPractice(host);
     }));
     if (st.srcMode === 'paste') bindPasteForm(host, true);
+    if (st.srcMode === 'url') {
+      const u = host.querySelector('#uUrl');
+      u.addEventListener('keydown', (e) => { if (e.key === 'Enter') host.querySelector('#uGo').click(); });
+      host.querySelector('#uGo').addEventListener('click', () => {
+        const url = cleanUrl(u.value);
+        if (!url) { toast('記事のURLを貼り付けてください'); u.focus(); return; }
+        startUrl(host, url, host.querySelector('#uGenre').value);
+      });
+    }
     if (st.srcMode === 'claude') host.querySelector('#gGo').addEventListener('click', () => {
       st.cur = { make: { gen: { genre: host.querySelector('#gGenre').value, theme: host.querySelector('#gTheme').value.trim() }, meta: { genre: host.querySelector('#gGenre').value, generated: true } } };
       save(); vPractice(host);
     });
+  }
+  // 貼られた文字から URL を取り出す（前後の説明や空白が付いていてもよい）
+  const cleanUrl = (t) => { const m = /https?:\/\/[^\s<>"'）」]+/i.exec(String(t || '')); return m ? m[0] : ''; };
+  // URL で出題：依頼文をすぐ共有シートで送り、返答を貼る画面へ進む
+  function startUrl(host, url, genre) {
+    st.cur = { make: { url, meta: { url, genre, title: '' } } };
+    save();
+    sendPrompt(promptUrl(url, genre, st.len));
+    vPractice(host);
+  }
+  async function sendPrompt(text) {
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Level 1 · 出題', text }); return; } catch (err) { if (err && err.name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(text); toast('Copied — Claude に貼り付けて送信'); } catch (e) { toast('「Claude で出題」をもう一度押してください'); }
   }
   function pasteForm(forPractice) {
     return `<div class="jz-row"><label class="field"><span class="label">題名</span><input type="text" id="pTitle" placeholder="例：人民时评：让…"></label>
@@ -294,6 +342,7 @@ ${(c.question || '').trim() || 'なし'}
     $('#pText').addEventListener('input', () => { $('#pCnt').textContent = `${nchars($('#pText').value)}字`; });
     $('#pGo').addEventListener('click', async () => {
       const t = $('#pText').value.trim();
+      if (forPractice && /^https?:\/\/\S+$/i.test(t)) { startUrl(host, t, $('#pGenre').value); return; }
       if (nchars(t) < 60) { toast('原文は60字以上貼り付けてください'); return; }
       const meta = { title: $('#pTitle').value.trim() || `${t.slice(0, 18)}…`, url: $('#pUrl').value.trim(), genre: $('#pGenre').value };
       let sourceId = null;
@@ -302,24 +351,32 @@ ${(c.question || '').trim() || 'なし'}
     });
   }
   const sitesHTML = () => `<section class="jz-sites"><h3 class="label">原文におすすめのサイト</h3>
-      <p class="muted small">記事を開いて本文をコピーし、「貼り付け」に入れてください。論説4・時事経済3・随筆文学2・公文書1くらいの配分がおすすめです。</p>
+      <p class="muted small">記事を開いてURLをコピーし、「URL」に貼ってください（開けないときは本文をコピーして「本文を貼り付け」へ）。論説4・時事経済3・随筆文学2・公文書1くらいの配分がおすすめです。</p>
       <div class="jz-grid">${SITES.map(([n, u, d]) => `<a class="jz-site" href="${u}" target="_blank" rel="noopener"><b>${esc(n)}</b><span>${esc(d)}</span></a>`).join('')}</div></section>`;
 
   // 1'. Claude に出題してもらう（依頼文を送り、返ってきた JSON を貼る）
   function vMake(host, c) {
     const m = c.make;
-    const prompt = () => (m.gen ? promptGenerate(m.gen.genre, m.gen.theme, st.len) : promptMake(m.src, m.meta.genre, st.len));
+    const prompt = () => (m.gen ? promptGenerate(m.gen.genre, m.gen.theme, st.len) : m.url ? promptUrl(m.url, m.meta.genre, st.len) : promptMake(m.src, m.meta.genre, st.len));
     host.innerHTML = `${steps(1)}
       <section class="jz-panel"><h2>Claude に出題してもらう</h2>
         <p class="muted small">「Claude で出題」で依頼文を Claude アプリに送り、返ってきた返答をコピーして下に貼り付けます。</p>
-        ${m.src ? `<details class="ja-det"><summary>原文（${nchars(m.src)}字）</summary><div lang="zh-CN" class="serif">${esc(m.src.slice(0, 1200))}${m.src.length > 1200 ? '…' : ''}</div></details>` : `<p class="small">ジャンル：${esc(m.gen.genre)}${m.gen.theme ? ` · テーマ：${esc(m.gen.theme)}` : ''} · ${st.len}字前後</p>`}
+        ${m.url ? `<p class="small">記事：<a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.url.length > 70 ? `${m.url.slice(0, 70)}…` : m.url)}</a> · ${esc(m.meta.genre)} · ${st.len}字前後</p><p class="muted small">共有シートが開かなかったときや、送り直すときは「Claude で出題」を押してください。</p>` : m.src ? `<details class="ja-det"><summary>原文（${nchars(m.src)}字）</summary><div lang="zh-CN" class="serif">${esc(m.src.slice(0, 1200))}${m.src.length > 1200 ? '…' : ''}</div></details>` : `<p class="small">ジャンル：${esc(m.gen.genre)}${m.gen.theme ? ` · テーマ：${esc(m.gen.theme)}` : ''} · ${st.len}字前後</p>`}
         ${ST.claudeHTML(prompt).replace('Claude で添削', 'Claude で出題')}
         ${pasteHTML('make', 'Claude の返答を貼り付け（```json の部分を含めて）')}
         <div class="actions"><button class="btn" id="mBack">やめる</button></div>
       </section>`;
     host.querySelector('#mBack').addEventListener('click', () => { st.cur = null; save(); vPractice(host); });
     bindPaste('make', (t) => {
-      const ex = toProblem(parseJSON(t), m.meta);
+      const r = parseJSON(t);
+      if (r && r.error && !r.ja_text) return `Claude が記事を読めませんでした（${r.error}）。「やめる」で戻り、記事の本文をコピーして「本文を貼り付け」から出題してください。`;
+      const meta = m.url ? { ...m.meta, title: (r && r.source_title) || m.meta.title } : m.meta;
+      const ex = toProblem(r, meta);
+      // URL から作った問題は、切り出した原文をストックにも残す（あとで解き直せるように）
+      if (ex && m.url && !meta.sourceId) {
+        ex.sourceId = uid();
+        put({ id: ex.sourceId, kind: 'corpus', at: Date.now(), title: ex.srcTitle || ex.title, url: m.url, genre: meta.genre, text: ex.source_zh });
+      }
       if (!ex) return '問題の JSON が読み取れません。```json のブロックを含めて、返答の全文を貼り付けてください。';
       st.cur = { ex, answer: '', hints: 0, question: '' }; save(); vPractice(host); return '';
     });
@@ -535,7 +592,7 @@ ${(c.question || '').trim() || 'なし'}
     },
     exportData: () => ({ st, corpus: DB.corpus, attempts: DB.attempts }),
     async importData(d) {
-      st = Object.assign({ cur: null, exprs: [], len: 150, srcMode: 'stock' }, (d && d.st) || {});
+      st = Object.assign({ cur: null, exprs: [], len: 150, srcMode: 'url' }, (d && d.st) || {});
       save();
       for (const x of [...DB.corpus, ...DB.attempts]) await remove(x);
       for (const x of [...((d && d.corpus) || []), ...((d && d.attempts) || [])]) await put(x);

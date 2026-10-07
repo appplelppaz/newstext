@@ -280,10 +280,13 @@ window.Study = function Study(ctx) {
   }
   const hzDue = () => Object.keys(hz).filter((id) => hz[id].due <= todayS());
   // 解答例を字ごとに押せるようにする（押した字は Hanzi デッキへ）
-  function tapHTML(model, src) {
+  // o.miss：聞き落とした字の位置（印を付けるだけで、Hanzi に入れるかは本人が押して決める）
+  function tapHTML(model, src, o = {}) {
     const m = Ink.chars(model);
-    return `<div class="src tapm" data-model="${esc(model)}" data-src="${esc(src)}">${m.map((c, i) => (Ink.isHan(c) ? `<span data-ti="${i}" class="${hz[hzId(c, snippet(model, i))] ? 'on' : ''}">${esc(c)}</span>` : esc(c))).join('')}</div>
-      <p class="muted small hint">書けなかった字を押すと Hanzi デッキに入ります（Words › Hanzi で手書きの復習）。</p>`;
+    const miss = new Set(o.miss || []);
+    const mk = (c, i) => (miss.has(i) ? `<mark>${esc(c)}</mark>` : esc(c));
+    return `<div class="src tapm ${o.cls || ''}" data-model="${esc(model)}" data-src="${esc(src)}">${m.map((c, i) => (Ink.isHan(c) ? `<span data-ti="${i}" class="${hz[hzId(c, snippet(model, i))] ? 'on' : ''}">${mk(c, i)}</span>` : mk(c, i))).join('')}</div>
+      <p class="muted small hint">${o.hint || '書けなかった字を押すと Hanzi デッキに入ります（Words › Hanzi で手書きの復習）。'}</p>`;
   }
   app.addEventListener('click', (e) => {
     const s = e.target.closest('.tapm [data-ti]');
@@ -826,6 +829,7 @@ window.Study = function Study(ctx) {
     const extra = a.length - ok;
     return { html: b.map((c, k) => (hit[k] ? esc(c) : `<mark>${esc(c)}</mark>`)).join(''), miss: b.length - ok, extra, missIdx: b.map((c, k) => (hit[k] ? -1 : k)).filter((k) => k >= 0) };
   }
+  const TAP_HINT = '印は聞き落とした字。書けない字だけを押すと Hanzi デッキに入ります（もう一度押すと外れる）。';
   // 書けなかった字（漢字だけ）を、前後の文脈つきで Hanzi デッキに入れる
   function hzFromDiff(d, model, src, prompt) {
     const m = Ink.chars(model);
@@ -874,9 +878,9 @@ window.Study = function Study(ctx) {
         // 1字の置き換えは「抜け1・余分1」と出るので、多い方を誤りの数とみなす
         const pts = Math.max(0, t.pts - 2 * Math.max(d.miss, d.extra));
         est += pts;
-        if (norm(mine)) hzFromDiff(d, t.model, src); // 手を付けていない設問の字までは入れない
-        box.innerHTML = `<div class="src diff">${d.html}</div>
-          <p class="small"><span class="${d.miss || d.extra ? 'ng' : 'ok'}">${d.miss || d.extra ? '✗' : '✓'}</span> ${d.miss ? `${d.miss} 字の聞き落とし・誤り` : '全文一致'}${d.extra ? ` · 余分な字 ${d.extra}` : ''} · 目安 ${pts} / ${t.pts}${d.missIdx.length ? ' · 書けなかった字は Hanzi へ' : ''}</p>
+        // 聞き落とした字は印を付けるだけ。書けない字かどうかは本人が判断して押す
+        box.innerHTML = `${tapHTML(t.model, src, { miss: d.missIdx, cls: 'diff', hint: TAP_HINT })}
+          <p class="small"><span class="${d.miss || d.extra ? 'ng' : 'ok'}">${d.miss || d.extra ? '✗' : '✓'}</span> ${d.miss ? `${d.miss} 字の聞き落とし・誤り` : '全文一致'}${d.extra ? ` · 余分な字 ${d.extra}` : ''} · 目安 ${pts} / ${t.pts}</p>
           ${t.note ? `<p class="small">${esc(t.note)}</p>` : ''}${(t.vocab || []).map(vocabLine).join('')}`;
       });
       $('#after-l').innerHTML = shown ? `<div class="pbox"><div class="label">Script</div><div class="zh-text">${esc(p.zh || '')}</div>${p.ja ? `<details class="ja-det"><summary>日本語訳</summary><div>${esc(p.ja)}</div></details>` : ''}${(p.vocab || []).map(vocabLine).join('')}</div>` : '';
