@@ -332,15 +332,9 @@ body { touch-action: manipulation; }
 .ink-paper canvas { display: block; touch-action: none; }
 .ink-paper.pad { border-radius: var(--r); }
 .ink-ov { position: absolute; inset: 0; pointer-events: none; }
-.ink-cell { position: absolute; display: grid; place-items: center; font-family: var(--serif); line-height: 1; color: color-mix(in srgb, var(--accent) 50%, transparent); }
-.ink-cell.bad { box-shadow: inset 0 0 0 2px var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
-.ink-hover { position: absolute; pointer-events: none; background: color-mix(in srgb, var(--accent) 8%, transparent); }
-.ink-hover[hidden] { display: none; }
-.marking canvas { cursor: pointer; }
 .memo { margin-top: 12px; }
 .memo .label { margin-bottom: 6px; }
 .wbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-.wbar.lead { margin: 0 0 16px; }
 .wtask .t-in { margin-top: 8px; }
 .qcard .wbox { margin: 12px 0 4px; display: flex; justify-content: center; }
 .tapm span { cursor: pointer; border-radius: 3px; padding: 0 1px; transition: background .15s; }
@@ -355,7 +349,6 @@ body { touch-action: manipulation; }
 .hz-ans { font-size: 46px; font-weight: 700; margin-top: 18px; }
 .grade.one { grid-template-columns: 1fr; }
 .actions.center { justify-content: center; }
-.answer.tall { min-height: 360px; }
 .answer { font-family: var(--serif); font-size: 17px; }
 
 /* ---------- 左右分割・本文の空欄 ---------- */
@@ -602,3 +595,27 @@ mark.jz-hl { background: color-mix(in srgb, var(--accent) 14%, transparent); col
 .jz-sc { font: 800 20px var(--serif); color: var(--accent); font-variant-numeric: tabular-nums; }
 .jz-sc.ok { color: var(--ink); }
 @media (max-width: 520px) { .jz-sent { grid-template-columns: 1fr; } }
+
+/* ---------- Books（目次と予定）・Plan の週・Weak points ---------- */
+.toc { display: flex; flex-direction: column; }
+.toc-ch { margin: 18px 0 6px; font: 700 13px var(--serif); letter-spacing: .06em; color: var(--muted); }
+.toc-row { display: grid; grid-template-columns: 48px 1fr auto 64px 96px; gap: 10px; align-items: baseline; padding: 9px 4px; border-bottom: 1px solid var(--line); font-size: 15px; }
+.toc-row .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+.toc-row .t { min-width: 0; overflow-wrap: anywhere; }
+.toc-row .p, .toc-row .d2 { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.toc-row .d { font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; color: inherit; }
+.toc-row.done .t { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--faint); }
+.toc-edit { margin: 22px 0; }
+.toc-edit summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.toc-edit textarea { min-height: 260px; font: 13px/1.6 ui-monospace, Menlo, monospace; margin-top: 8px; }
+@media (max-width: 700px) { .toc-row { grid-template-columns: 34px 1fr 54px; } .toc-row .p, .toc-row .d2 { display: none; } }
+.wday .ts .wt { display: block; margin-bottom: 4px; }
+.wday .ts .wt small { display: block; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.weak { margin: 18px 0 8px; }
+.wlist { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.wrow { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 11px 14px; border-bottom: 1px solid var(--line); color: inherit; text-decoration: none; }
+.wrow:last-child { border-bottom: 0; }
+.wrow .t { min-width: 0; }
+.wrow .t small { display: block; color: var(--muted); font-size: 12px; }
+.wrow .v { font-variant-numeric: tabular-nums; font-weight: 600; }
+.wrow .v.ng { color: var(--accent); }

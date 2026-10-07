@@ -14,8 +14,9 @@
     start: '2026-10-06',
     exam: '2027-11-28',
     rest: [],
-    journal: 45,
-    e1Pages: '',
+    daily: 180, // 1日の学習時間（分）。教材の分量はこの中に収まるように日ごとに割り振る
+    journal: 40, // 聞き取り（中国語ジャーナル＋ポッドキャスト）の分数
+    toc: {}, // Books 画面で直した目次（books.js より優先）
     inputShift: 0,
     anchors: [],
   };
@@ -32,8 +33,8 @@
     const e = toT(S.exam);
     const n = Math.max(28, Math.round((e - a) / DAY));
     const cut = (f) => a + Math.round(n * f) * DAY;
-    // 初期値で 10/6–12/31・1/1–3/31・4/1–8/31・9/1–試験前日 になる比率
-    const c = [a, cut(0.2081), cut(0.4234), cut(0.7895), a + n * DAY];
+    // 初期値で 10/6–1/31・2/1–4/30・5/1–8/31・9/1–試験前日 になる比率（1日3時間で教材を終えるため、インプットを4か月に）
+    const c = [a, cut(0.2823), cut(0.4952), cut(0.7895), a + n * DAY];
     // チェックポイントの結果でインプット期を延ばした分だけ P2 の開始を遅らせる
     const shift = Math.max(0, Math.min(+S.inputShift || 0, Math.round((c[2] - c[1]) / DAY) - 28));
     c[1] += shift * DAY;
@@ -64,43 +65,45 @@
     return out.map((x, i) => ({ ...x, n: i + 1 }));
   }
 
-  function e1Starts(S) {
-    const B = root.BOOKS.errors1;
-    const custom = String(S.e1Pages || '').split(/[^0-9]+/).map(Number).filter((n) => n > 0);
-    if (custom.length >= B.items) return { starts: custom.slice(0, B.items), estimated: false };
-    const step = (B.endPage - 1) / B.items;
-    return { starts: Array.from({ length: B.items }, (_, i) => 1 + Math.round(i * step)), estimated: true };
-  }
+  const seq = (n, f) => Array.from({ length: n }, (_, i) => f(i + 1));
+
+  // 目次：Books 画面で直したもの（S.toc）があればそれを、なければ books.js を使う
+  const tocOf = (S, key, def) => { const o = S.toc && S.toc[key]; return Array.isArray(o) && o.length ? o : def; };
+  const chapterOf = (chs, n) => { const c = (chs || []).filter((x) => x[0] <= n).pop(); return c ? c[1] : ''; };
 
   function errorsUnits(S) {
     const B = root.BOOKS;
     const out = [];
-    const chapterOf = (chs, n) => chs.filter((c) => c[0] <= n).pop()[1];
-    const e1 = e1Starts(S);
-    for (let k = 1; k <= B.errors1.items; k++) {
-      const p0 = e1.starts[k - 1];
-      const p1 = k < B.errors1.items ? Math.max(p0, e1.starts[k] - 1) : B.errors1.endPage;
-      out.push({ id: `e1-${k}`, book: 'I', n: k, p0, p1, est: e1.estimated, note: chapterOf(B.errors1.chapters, k), w: p1 - p0 + 1 });
-    }
-    [['errors2', 'II', 'e2'], ['errors3', 'III', 'e3']].forEach(([key, label, pre]) => {
+    [['errors1', 'I', 'e1'], ['errors2', 'II', 'e2'], ['errors3', 'III', 'e3']].forEach(([key, label, pre]) => {
       const bk = B[key];
-      bk.items.forEach(([p0, title], i) => {
-        const p1 = i + 1 < bk.items.length ? bk.items[i + 1][0] - 1 : bk.endPage;
-        out.push({ id: `${pre}-${i + 1}`, book: label, n: i + 1, p0, p1, note: `${pad2(i + 1)} ${title}`, ch: chapterOf(bk.chapters, i + 1), w: p1 - p0 + 1 });
+      const items = tocOf(S, key, bk.items);
+      items.forEach(([p0, title], i) => {
+        const n = i + 1;
+        const p1 = (bk.breaks && bk.breaks[n]) || (n < items.length ? items[n][0] - 1 : bk.endPage);
+        out.push({ id: `${pre}-${n}`, book: label, n, p0, p1, title, note: `${pad2(n)} ${title}`, ch: chapterOf(bk.chapters, n), w: Math.max(1, p1 - p0 + 1) });
       });
     });
     return out;
   }
 
-  function tbUnits(ids) {
+  // 合格奪取：STEP ごとの見出し（sections: [[最初の問題番号, 見出し, ページ]]）があれば、問題ごとに持たせる
+  function tbUnits(S, ids) {
     const out = [];
     root.BOOKS.training.steps.filter((s) => ids.includes(s.id)).forEach((s) => {
-      for (let q = 1; q <= s.q; q++) out.push({ id: `tb-${s.id}-${q}`, step: s, n: q, w: s.w || 1 });
+      const secs = tocOf(S, `training.${s.id}`, s.sections || []);
+      for (let q = 1; q <= s.q; q++) {
+        const sec = secs.filter((x) => x[0] <= q).pop();
+        out.push({ id: `tb-${s.id}-${q}`, step: s, n: q, sec: sec ? { title: sec[1], page: sec[2] } : null, w: s.w || 1 });
+      }
     });
     return out;
   }
-
-  const seq = (n, f) => Array.from({ length: n }, (_, i) => f(i + 1));
+  // キクタン：週・Day の見出し（weeks: [[最初の Day, 見出し]]）
+  function kkUnits(S, pre) {
+    const K = root.BOOKS.kikutan;
+    const weeks = tocOf(S, 'kikutan', K.weeks || []);
+    return seq(K.days, (n) => { const w = weeks.filter((x) => x[0] <= n).pop(); return { id: `${pre}-${n}`, n, title: w ? w[1] : '', w: 1 }; });
+  }
 
   // ---------- トラック定義 ----------
 
@@ -134,22 +137,23 @@
       { key: 'ppL', name: 'Past Papers', pair: true, from: p3cut, to: p3.b, days: on(6), units: paperUnits([['L1-110', 1]], { timed: true }) },
       { key: 'ppF', name: 'Past Papers', pair: true, from: p4.a, to: exam - DAY, days: on(6), units: paperUnits([['L1-113', 1], ['L1-110', 2], ['L1-116', 1, true], ['L1-113', 2], ['L1-116', 2]], { timed: true }) },
 
+      // 以下の教材は「min」を目安の比率として、その日の空き時間（daily − 固定タスク）を分け合う
       // P1 Foundation
       { key: 'errors', name: 'Errors', min: 75, from: p1.a, to: p1.b, days: all, units: errorsUnits(S) },
-      { key: 'tb1', name: 'Training Book', min: 45, from: p1.a, to: p1.b, days: all, units: tbUnits(['p1', 'p2']) },
-      { key: 'kk1', name: 'Kikutan', min: 30, from: p1.a, to: p1.b, days: all, units: seq(B.kikutan.days, (n) => ({ id: `kk-${n}`, n, w: 1 })) },
+      { key: 'tb1', name: 'Training Book', min: 45, from: p1.a, to: p1.b, days: all, units: tbUnits(S, ['p1', 'p2']) },
+      { key: 'kk1', name: 'Kikutan', min: 30, from: p1.a, to: p1.b, days: all, units: kkUnits(S, 'kk') },
 
       // P2 Format
-      { key: 'tb2', name: 'Training Book', min: 75, from: p2.a, to: p2.b, days: all, units: tbUnits(['p3', 'p4', 'g1', 'g2', 'g3', 'g4']) },
-      { key: 'tbm1', name: 'Training Book', min: 120, from: p2.a + 35 * DAY, to: p2.a + 63 * DAY, days: on(6), avoidPairs: true, units: tbUnits(['p5']) },
-      { key: 'tbm2', name: 'Training Book', min: 120, from: p2.b - 21 * DAY, to: p2.b, days: on(6), avoidPairs: true, units: tbUnits(['g5']) },
-      { key: 'hsk', name: 'HSK 7–9', min: 30, from: p2.a, to: Math.min(p4.a + 30 * DAY, exam), days: all, units: seq(hskN, (n) => ({ id: `hsk-${n}`, n, w: 1 })) },
+      { key: 'tb2', name: 'Training Book', min: 75, from: p2.a, to: p2.b, days: all, units: tbUnits(S, ['p3', 'p4', 'g1', 'g2', 'g3', 'g4']) },
+      { key: 'tbm1', name: 'Training Book', min: 120, fixedMin: true, from: p2.a + 35 * DAY, to: p2.a + 63 * DAY, days: on(6), avoidPairs: true, units: tbUnits(S, ['p5']) },
+      { key: 'tbm2', name: 'Training Book', min: 120, fixedMin: true, from: p2.b - 21 * DAY, to: p2.b, days: on(6), avoidPairs: true, units: tbUnits(S, ['g5']) },
+      { key: 'hsk', name: 'HSK 7–9', min: 20, from: p2.a, to: p3.b, days: all, units: seq(hskN, (n) => ({ id: `hsk-${n}`, n, w: 1 })) },
       { key: 'idioms', name: 'Idioms', min: 15, from: p2.a, to: p3.b, days: all, units: seq(nId, (n) => ({ id: `id-${n}`, n, w: 1 })) },
       { key: 'tr2', name: 'Translate', min: 40, from: p2.a, to: p2.b, days: on(3, 6), units: trSeq(1, 24) },
 
       // P3 Past Papers
       { key: 'er', name: 'Errors · Review', min: 30, from: p3.a, to: p3.b, days: all, units: errorsUnits(S).map((u) => ({ ...u, id: `r${u.id}`, w: 1 })) },
-      { key: 'kk2', name: 'Kikutan · Review', min: 15, from: p3.a, to: Math.min(p3.a + 61 * DAY, p3.b), days: all, units: seq(B.kikutan.days, (n) => ({ id: `kk2-${n}`, n, w: 1 })) },
+      { key: 'kk2', name: 'Kikutan · Review', min: 15, from: p3.a, to: Math.min(p3.a + 61 * DAY, p3.b), days: all, units: kkUnits(S, 'kk2') },
       { key: 'tr2b', name: 'Translate', min: 40, from: p3.a, to: p3.b, days: on(3, 6), avoidPairs: true, units: trSeq(25, nTr) },
 
       // P4 Final
@@ -172,27 +176,38 @@
     return out;
   }
 
-  function assign(plan, units, days) {
+  // ユニットを日に割り当てる。wt があれば、その日の割り当て分数に比例して多く置く
+  function assign(plan, units, days, wt) {
     if (!units.length || !days.length) return;
+    let ws = days.map((t) => (wt ? wt(t) : 1));
+    if (!ws.some((x) => x > 0)) ws = days.map(() => 1);
+    const tot = ws.reduce((a, x) => a + x, 0);
+    const cum = [];
+    ws.reduce((a, x, i) => (cum[i] = a + x), 0);
     const W = units.reduce((s, u) => s + u.w, 0);
     let c = 0;
+    let d = 0;
     units.forEach((u) => {
-      const m = c + u.w / 2;
+      const m = ((c + u.w / 2) / W) * tot;
       c += u.w;
-      const t = days[Math.min(days.length - 1, Math.floor((m / W) * days.length))];
+      while (d < days.length - 1 && cum[d] <= m) d++;
+      const t = days[d];
       if (!plan.has(t)) plan.set(t, []);
       plan.get(t).push(u);
     });
   }
 
-  function planTrack(S, tr, done, blocked) {
+  function planTrack(S, tr, done, blocked, wt) {
     const plan = new Map();
     // 模試は過去問の土曜を避ける。避けると置ける日がなくなる場合は重ねる
     const daysFor = (from, to) => {
       const free = trackDays(S, from, to, (t) => tr.days(t) && !(tr.avoidPairs && blocked.has(t)));
-      return free.length ? free : trackDays(S, from, to, tr.days);
+      const list = free.length ? free : trackDays(S, from, to, tr.days);
+      // 時間の割り当てがある日だけに置く（割り当てがどこにもなければ、そのまま）
+      const timed = wt ? list.filter((t) => wt(t) > 0) : list;
+      return timed.length ? timed : list;
     };
-    assign(plan, tr.units, daysFor(tr.from, tr.to));
+    assign(plan, tr.units, daysFor(tr.from, tr.to), wt);
     const exam = toT(S.exam);
     [...(S.anchors || [])].sort().forEach((aS) => {
       const a = toT(aS);
@@ -206,7 +221,7 @@
         else plan.delete(t);
       }
       const to = Math.min(Math.max(tr.to, a + 14 * DAY), exam);
-      assign(plan, remaining, daysFor(a, to));
+      assign(plan, remaining, daysFor(a, to), wt);
     });
     return plan;
   }
@@ -223,31 +238,31 @@
     return out;
   }
 
+  // その日の範囲と、目次の項目名（notes）を作る
   function labelUnits(tr, units) {
     const first = units[0];
     const last = units[units.length - 1];
     switch (tr.key) {
       case 'errors':
       case 'er':
-        return groupRuns(units, (u) => u.book).map((g) => {
+        return groupRuns(units, (u) => `${u.book}|${u.ch}`).map((g) => {
           const a = g.units[0];
           const b = g.units[g.units.length - 1];
-          const nums = a.book === 'I' ? rng(`#${a.n}`, `#${b.n}`).replace('–#', '–') : rng(pad2(a.n), pad2(b.n));
-          const notes = a.book === 'I' ? [...new Set(g.units.map((u) => u.note))] : g.units.map((u) => u.note);
           return {
-            head: `${a.book}  ${nums}`,
-            meta: tr.key === 'er' ? 'exercises' : `p.${a.est ? '≈' : ''}${rng(a.p0, b.p1)}`,
-            notes: tr.key === 'er' ? [] : notes,
+            head: `${a.book}  ${rng(`#${a.n}`, `#${b.n}`).replace('–#', '–')}${a.ch ? ` · ${a.ch}` : ''}`,
+            meta: tr.key === 'er' ? `review · p.${rng(a.p0, b.p1)}` : `p.${rng(a.p0, b.p1)}`,
+            notes: g.units.map((u) => u.note),
           };
         });
-      case 'tb1': case 'tb2': case 'tb3': case 'tbm1': case 'tbm2':
+      case 'tb1': case 'tb2': case 'tbm1': case 'tbm2':
         return groupRuns(units, (u) => u.step.id).map((g) => {
           const s = g.units[0].step;
           if (s.mock) return { head: `${s.level}  Mock`, meta: 'timed', notes: [s.label] };
-          return { head: `${s.level}  STEP ${s.step}`, meta: `Q${rng(g.units[0].n, g.units[g.units.length - 1].n)}`, notes: [s.label] };
+          const secs = groupRuns(g.units.filter((u) => u.sec), (u) => u.sec.title).map((x) => `${x.key}${x.units[0].sec.page ? `（p.${x.units[0].sec.page}〜）` : ''}`);
+          return { head: `${s.level}  STEP ${s.step}`, meta: `Q${rng(g.units[0].n, g.units[g.units.length - 1].n)}`, notes: [s.label, ...secs] };
         });
       case 'kk1': case 'kk2':
-        return [{ head: `Day ${rng(first.n, last.n)}`, meta: '', notes: [] }];
+        return [{ head: `Day ${rng(first.n, last.n)}`, meta: tr.key === 'kk2' ? 'review' : '', notes: [...new Set(units.map((u) => u.title).filter(Boolean))] }];
       case 'hsk': {
         const c = root.BOOKS.hsk.chunk;
         const a = (first.n - 1) * c + 1;
@@ -256,7 +271,7 @@
       }
       case 'idioms':
         return [{ head: `#${rng(first.n, last.n)}`, meta: '+ review', notes: [] }];
-      case 'tr1': case 'tr2': case 'tr2b': case 'tr3': {
+      case 'tr2': case 'tr2b': case 'tr3': {
         const list = translationList();
         return units.map((u) => ({ head: `T${u.n}`, meta: list[u.n - 1] ? list[u.n - 1].dir : '', notes: list[u.n - 1] ? [list[u.n - 1].t] : [] }));
       }
@@ -282,21 +297,28 @@
   function build(settings, done) {
     const S = { ...DEFAULTS, ...settings };
     S.rest = (S.rest || []).map(Number);
+    S.toc = S.toc || {};
     done = done || {};
     const P = phases(S);
     const exam = toT(S.exam);
+    const daily = Math.max(60, +S.daily || DEFAULTS.daily);
     const days = new Map();
+    const used = new Map(); // 日ごとに入った分数
     const add = (t, task) => {
       const k = toS(t);
       if (!days.has(k)) days.set(k, []);
       days.get(k).push(task);
+      used.set(k, (used.get(k) || 0) + (task.min || 0));
     };
+    const usedOn = (t) => used.get(toS(t)) || 0;
     const T = tracks(S, P);
-    const order = ['cp', 'ppD', 'ppC', 'ppA', 'ppB', 'ppL', 'ppF', 'tbm1', 'tbm2', 'errors', 'er', 'tb1', 'tb2', 'kk1', 'hsk', 'kk2', 'idioms', 'vocab', 'tr1', 'tr2', 'tr2b', 'tr3', 'mistakes', 'ppfix', 'idrev', 'reading', 'journal', 'podcast', 'jzdrill', 'weekly'];
+    const order = ['cp', 'ppD', 'ppC', 'ppA', 'ppB', 'ppL', 'ppF', 'tbm1', 'tbm2', 'errors', 'er', 'tb1', 'tb2', 'kk1', 'hsk', 'kk2', 'idioms', 'vocab', 'tr2', 'tr2b', 'tr3', 'mistakes', 'ppfix', 'flex', 'idrev', 'reading', 'journal', 'podcast', 'jzdrill', 'weekly'];
     const LV = { L1: 'Level 1', P1: 'Pre-1' };
     const blocked = new Set();
+    const phaseOf = (t) => P.findIndex((p) => t >= p.a && t < p.b);
 
-    T.forEach((tr) => {
+    // 1. 時間の決まっているもの：過去問（土 120分・日 90分）と模試（120分）
+    T.filter((tr) => tr.pair || tr.fixedMin).forEach((tr) => {
       const plan = planTrack(S, tr, done, blocked);
       [...plan.keys()].sort((x, y) => x - y).forEach((t) => {
         const us = plan.get(t);
@@ -317,18 +339,18 @@
       });
     });
 
-    // インプットの到達度を測るチェックポイント（土曜は過去問と重なるので避ける）
+    // 2. チェックポイント（土曜は過去問と重なるので避ける）
     const cpDays = checkpointDays(S, P);
     cpDays.forEach((t, i) => add(t, { key: `cp-${i}`, track: 'cp', name: 'Checkpoint', min: 40, ids: [`cp-${i}`], cp: i, lines: [{ head: `CP${i}`, meta: i === 0 ? 'baseline quiz' : 'quiz · analysis', notes: [] }] }));
 
-    // 時間だけ指定する固定タスク
+    // 3. 毎日の固定タスク（時間だけ決まっているもの）
     for (let t = P[0].a; t < exam; t += DAY) {
       if (S.rest.includes(dow(t))) continue;
       const k = toS(t);
-      const ph = P.findIndex((p) => t >= p.a && t < p.b);
+      const ph = phaseOf(t);
       // 聞き取りは本物の声で：中国語ジャーナル（手順つき）と、取り込んだポッドキャスト（Listen タブ）
-      const lm = +S.journal || 45;
-      const pm = Math.max(10, Math.round(lm * 0.45 / 5) * 5);
+      const lm = Math.max(20, +S.journal || DEFAULTS.journal);
+      const pm = Math.max(10, Math.round((lm * 0.375) / 5) * 5);
       add(t, { key: 'journal', track: 'journal', name: 'Journal', min: lm - pm, fixed: `${k}|journal`, lines: [{ head: '中国語ジャーナル', meta: 'real voices', notes: ['通しで聞く（スクリプトは見ない）', 'スクリプトで確かめる', '分からなかった文を3回聞き直す', 'シャドーイング（1記事）'] }] });
       const pmode = ph === 0 ? 'dictation' : dow(t) === 3 ? 'summary' : dow(t) % 2 ? 'dictation' : 'shadow';
       const PMODE = { dictation: ['Dictation', '10 sentences · then Shadow', ['1文ずつ聞く → スクリブルで書く → Check', '聞き取れなかった字は Hanzi へ']], shadow: ['Shadow', '10 sentences', ['原稿を見て3回重ねる → 原稿を隠して2回']], summary: ['Summary', '1 chunk · 180–200字', ['3回まで聞いてメモ → 要約 → Claude で添削']] };
@@ -337,20 +359,52 @@
       if ([2, 5].includes(dow(t))) add(t, { key: 'jzdrill', track: 'jzdrill', name: 'JA → ZH Drill', min: ph === 0 ? 25 : 30, fixed: `${k}|jzdrill`, link: '#/zhdrill', lines: [{ head: '日文中訳ドリル', meta: ph === 0 ? '1 article · 150字' : '1 article · 150–250字', notes: ['記事を選ぶ → Claude で出題 → スクリブルで訳す → 提出して添削', '覚えるべき表現を表現ノートに保存し、日本語 → 中国語で言えるか確かめる'] }] });
       // P1 は多読（やさしめの文章を大量に）、P2 以降は試験レベルの長文
       add(t, ph === 0
-        ? { key: 'reading', track: 'reading', name: 'Reading', min: 30, fixed: `${k}|reading`, lines: [{ head: 'Extensive', meta: 'easy · a lot · no dictionary', notes: [] }] }
-        : { key: 'reading', track: 'reading', name: 'Reading', min: 30, fixed: `${k}|reading`, lines: [{ head: 'Long text', meta: 'news · essays', notes: [] }] });
-      if (dow(t) === 0) add(t, { key: 'weekly', track: 'weekly', name: 'Review', min: 30, fixed: `${k}|weekly`, lines: [{ head: 'Week', meta: 'scores · weak points', notes: [] }] });
-      // 過去問の間違い直し（診断テストの翌週から毎日の平日）と、過去問語彙カード（P2 以降）
+        ? { key: 'reading', track: 'reading', name: 'Reading', min: 20, fixed: `${k}|reading`, lines: [{ head: 'Extensive', meta: 'easy · a lot · no dictionary', notes: [] }] }
+        : { key: 'reading', track: 'reading', name: 'Reading', min: 20, fixed: `${k}|reading`, lines: [{ head: 'Long text', meta: 'news · essays', notes: [] }] });
+      if (dow(t) === 0) add(t, { key: 'weekly', track: 'weekly', name: 'Review', min: 20, fixed: `${k}|weekly`, link: '#/progress', lines: [{ head: 'Week', meta: 'weak points · next week', notes: ['Progress の Weak points を見て、来週どこに時間を回すか決める'] }] });
+      // 過去問の間違い直し（診断テストの翌週から平日）と、過去問語彙カード（P2 以降）
       if (t >= P[0].a + 7 * DAY && dow(t) >= 1 && dow(t) <= 5) add(t, { key: 'mistakes', track: 'mistakes', name: 'Mistakes', min: 15, fixed: `${k}|mistakes`, lines: [{ head: 'Review', meta: 'due questions', notes: [] }] });
       if (ph >= 1) add(t, { key: 'vocab', track: 'vocab', name: 'Exam Vocab', min: 15, fixed: `${k}|vocab`, lines: [{ head: 'Review', meta: 'due cards', notes: [] }] });
-      if (ph === 3) {
-        add(t, { key: 'idrev', track: 'idrev', name: 'Idioms', min: 15, fixed: `${k}|idrev`, lines: [{ head: 'Review', meta: 'due cards', notes: [] }] });
-        if (dow(t) >= 1 && dow(t) <= 5) add(t, { key: 'ppfix', track: 'ppfix', name: 'Past Papers', min: 45, fixed: `${k}|ppfix`, lines: [{ head: 'Weak sections', meta: 'redo', notes: [] }] });
-      }
+      if (ph === 3) add(t, { key: 'idrev', track: 'idrev', name: 'Idioms', min: 15, fixed: `${k}|idrev`, lines: [{ head: 'Review', meta: 'due cards', notes: [] }] });
+    }
+
+    // 4. 教材：その日の空き（daily − ここまでの分数）を、動いているトラックで min の比率に分ける
+    const elastic = T.filter((tr) => !tr.pair && !tr.fixedMin);
+    const allot = new Map(elastic.map((tr) => [tr.key, new Map()]));
+    for (let t = P[0].a; t < exam; t += DAY) {
+      if (S.rest.includes(dow(t))) continue;
+      const act = elastic.filter((tr) => t >= tr.from && t < Math.min(tr.to, exam) && tr.days(t) && !(tr.avoidPairs && blocked.has(t)));
+      if (!act.length) continue;
+      const free = daily - usedOn(t);
+      const sum = act.reduce((a, tr) => a + tr.min, 0);
+      act.forEach((tr) => {
+        let m = Math.round(Math.min(tr.min * 1.4, (free * tr.min) / sum) / 5) * 5;
+        if (m < 10) m = 0;
+        allot.get(tr.key).set(t, m);
+      });
+    }
+    elastic.forEach((tr) => {
+      const A = allot.get(tr.key);
+      const wt = (t) => A.get(t) || 0;
+      const plan = planTrack(S, tr, done, blocked, wt);
+      [...plan.keys()].sort((x, y) => x - y).forEach((t) => {
+        const us = plan.get(t);
+        add(t, { key: tr.key, track: tr.key, name: tr.name, min: Math.max(10, wt(t) || tr.min), ids: us.map((u) => u.id), units: us.map((u) => u.n), lines: labelUnits(tr, us) });
+      });
+    });
+
+    // 5. 残りの時間：P4 は過去問の弱い大問のやり直し（どの大問かは Today で得点から選ぶ）、
+    //    それまでは遅れの取り戻しか弱点の復習（大きなユニットが置けなかった日に空きが出る）
+    for (let t = P[0].a; t < exam; t += DAY) {
+      if (S.rest.includes(dow(t))) continue;
+      const m = Math.min(120, Math.floor((daily - usedOn(t)) / 5) * 5);
+      const k = toS(t);
+      if (phaseOf(t) === 3 && m >= 15) add(t, { key: 'ppfix', track: 'ppfix', name: 'Past Papers', min: m, fixed: `${k}|ppfix`, lines: [{ head: 'Weak sections', meta: 'redo', notes: [] }] });
+      else if (m >= 25) add(t, { key: 'flex', track: 'flex', name: 'Catch-up', min: m, fixed: `${k}|flex`, link: '#/progress', lines: [{ head: 'Behind or weak points', meta: 'your choice', notes: ['遅れている教材を進める。遅れがなければ Progress の Weak points の上位を復習'] }] });
     }
 
     days.forEach((list) => list.sort((x, y) => order.indexOf(x.track) - order.indexOf(y.track)));
-    return { S, P, days, tracks: T, exam };
+    return { S, P, days, tracks: T, exam, daily };
   }
 
   root.Plan = { build, phases, checkpointDays, idiomList, translationList, DEFAULTS, PHASES, toT, toS, dow, DAY, unitDone };
