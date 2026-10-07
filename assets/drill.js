@@ -523,13 +523,15 @@ ${(c.question || '').trim() || 'なし'}
 
   return {
     view,
-    // Progress のまとめ
+    whenReady: (f) => (ready ? f() : onReady.push(f)),
+    isReady: () => ready,
+    // Progress のまとめ（弱点は Claude の分類として Weak points に入るので、ここは得点だけ。細かい弱点名は「記録」に）
     summaryHTML() {
       const A = DB.attempts;
       if (!A.length) return '';
       const sc = A.slice(0, 5).map((a) => a.score);
-      const w = weaknesses().slice(0, 3).map(([t]) => t);
-      return `<h2 class="section label">日文中訳ドリル</h2><div class="chips"><a class="chip" href="#/zhdrill/log">${A.length} 問</a><span class="chip ${sc.reduce((s, v) => s + v, 0) / sc.length >= PASS ? 'accent' : ''}">直近5回 ${Math.round(sc.reduce((s, v) => s + v, 0) / sc.length)} 点</span>${w.map((t) => `<span class="chip warn">${esc(t)}</span>`).join('')}</div>`;
+      const avg = Math.round(sc.reduce((s, v) => s + v, 0) / sc.length);
+      return `<h2 class="section label">日文中訳ドリル</h2><div class="chips"><a class="chip" href="#/zhdrill/log">${A.length} 問 · 記録</a><span class="chip ${avg >= PASS ? 'accent' : ''}">直近5回 ${avg} 点（合格目安 ${PASS}）</span></div>`;
     },
     exportData: () => ({ st, corpus: DB.corpus, attempts: DB.attempts }),
     async importData(d) {

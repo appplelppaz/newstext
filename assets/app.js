@@ -22,7 +22,11 @@
     },
   };
 
-  let S = { ...window.Plan.DEFAULTS, ...store.get('settings', {}) };
+  const saved = store.get('settings', {});
+  // 以前の既定（聞き取り45分・1日の時間なし）からの移行：1日3時間の計画に合わせて聞き取りは40分に
+  if (!('daily' in saved) && saved.journal === 45) saved.journal = 40;
+  delete saved.e1Pages;
+  let S = { ...window.Plan.DEFAULTS, ...saved };
   let done = store.get('done', {});
   let fixed = store.get('fixed', {});
   let srs = store.get('srs', {});
@@ -33,25 +37,25 @@
 
   const saveSettings = () => { store.set('settings', S); R = build(S, done); };
 
+  const CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const LEFT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+  const RIGHT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+
   // 過去問・チェックポイント・語彙カードは study.js
   const ST = window.Study({
     app, store, toast: (m) => toast(m), esc: (x) => esc(x), todayS: () => todayS(), addDays: (k, n) => addDays(k, n),
-    LEFT: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
-    RIGHT: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>',
-    IDIOMS, toS, toT, S: () => S, checkpointDays: () => window.Plan.checkpointDays({ ...window.Plan.DEFAULTS, ...S, rest: (S.rest || []).map(Number) }, R.P),
+    LEFT, IDIOMS, toS, toT, S: () => S, checkpointDays: () => window.Plan.checkpointDays({ ...window.Plan.DEFAULTS, ...S, rest: (S.rest || []).map(Number) }, R.P),
     setShift: (d) => { S.inputShift = d; saveSettings(); },
   });
 
   // 本物の声で聞く（ポッドキャスト）は listen.js
   const LS = window.Listen({
-    app, store, toast: (m) => toast(m), esc: (x) => esc(x), todayS: () => todayS(), ST,
-    LEFT: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+    app, store, toast: (m) => toast(m), esc: (x) => esc(x), todayS: () => todayS(), ST, LEFT,
   });
 
   // 日文中訳ドリル（原文 → 日本語の問題 → 中国語訳 → Claude の添削）は drill.js
   const DR = window.Drill({
-    app, store, toast: (m) => toast(m), esc: (x) => esc(x), todayS: () => todayS(), ST,
-    LEFT: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+    app, store, toast: (m) => toast(m), esc: (x) => esc(x), todayS: () => todayS(), ST, LEFT,
   });
 
   // ---------- 小物 ----------
@@ -63,10 +67,6 @@
   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const fmt = (k) => { const d = new Date(toT(k)); return `${WD[d.getUTCDay()]}, ${MON[d.getUTCMonth()]} ${d.getUTCDate()}`; };
   const hm = (m) => (m >= 60 ? `${Math.floor(m / 60)}h ${pad(m % 60)}m` : `${m}m`);
-  const CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-  const LEFT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
-  const RIGHT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
-
   function toast(msg) {
     document.querySelectorAll('.toast:not(.stay)').forEach((x) => x.remove());
     const el = document.createElement('div');
@@ -75,6 +75,8 @@
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 2300);
   }
+
+  window.Ink.onToast((m) => toast(m));
 
   // ---------- オフライン（Service Worker） ----------
   // 一度開けば、アプリのファイルと字体が端末に保存され、電波がなくても開ける
@@ -111,7 +113,7 @@
       row(offline.persisted === true, `Storage ${est ? `${(est.usage / 1048576).toFixed(1)} MB` : ''}${offline.persisted ? ' · kept' : ''}`, offline.persisted ? '' : '過去問データと手書きは端末に保存されます。ホーム画面に追加すると消されにくくなります。'),
       `<div class="rrow"><span>✎</span><span>Scribble<div class="muted small">文字を書く所はすべて、Apple Pencil で入力欄に書くと文字になります。設定 › Apple Pencil › スクリブル をオン、設定 › 一般 › キーボード › キーボード に「中国語（簡体字）」を追加してください。</div></span></div>`,
       `<div class="rrow"><span>♪</span><span>Real voices<div class="muted small">聞き取りの練習は Listen（ポッドキャスト）と中国語ジャーナルの本物の声で行います。取り込んだ音声は端末に保存され、電波がなくても聞けます。</div></span></div>`,
-      row(zh.length > 0, zh.length ? `Chinese voice · ${esc(zh.map((v) => v.name).slice(0, 3).join(', '))}` : 'No Chinese voice', '過去問の聞き取りだけは公式の音声がないので、原稿を iPad の読み上げで鳴らします。'),
+      row(zh.length > 0, zh.length ? `Chinese voice · ${esc(zh.map((v) => v.name).slice(0, 3).join(', '))}` : 'No Chinese voice', '過去問とチェックポイントの聞き取りだけは公式の音声がないので、原稿を iPad の読み上げで鳴らします。'),
     ].join('');
   }
   if ('speechSynthesis' in window) speechSynthesis.addEventListener('voiceschanged', () => offlineInfo());
@@ -175,10 +177,31 @@
   }
 
   // ---------- Today ----------
+  // 弱点から足すタスク（Focus・Writing focus・Hanzi）は、1日の時間を超えないように縮める。
+  // 余りの枠（Catch-up / Weak sections）があれば、そこから時間をもらう
+  function withExtras(k) {
+    const base = tasksOf(k).map((t) => ({ ...t }));
+    let extra = [...ST.focusTasks(k), ...ST.extraTasks(k)];
+    // 書き取りの正答率（直近2週）が8割未満なら、平日に Podcast dictation を足す
+    const dr = k === todayS() ? LS.dictRate(14) : null;
+    const wd = dow(toT(k));
+    if (dr != null && dr < 0.8 && wd >= 1 && wd <= 5 && !S.rest.includes(wd)) extra.push({ key: 'dfocus', track: 'dfocus', name: 'Focus', min: 15, fixed: `${k}|dfocus`, link: '#/listen/today/dictation', lines: [{ head: 'Podcast dictation', meta: `${Math.round(dr * 100)}% in 14 days · +10 sentences`, notes: ['聞き取れなかった字を Hanzi で書き、同じ文を Shadow で重ねる'] }] });
+    if (!extra.length) return base;
+    const sum = (l) => l.reduce((s, t) => s + t.min, 0);
+    const flex = base.find((t) => t.track === 'flex' || t.track === 'ppfix');
+    const room = Math.max(0, (+S.daily || 180) + 15 - sum(base) + (flex ? flex.min - 10 : 0));
+    if (sum(extra) > room) {
+      const f = room / sum(extra);
+      extra = extra.map((t) => ({ ...t, min: Math.max(10, Math.round((t.min * f) / 5) * 5) }));
+    }
+    if (flex) flex.min = Math.max(10, flex.min - sum(extra));
+    return [...base, ...extra];
+  }
+
   function viewToday(k) {
     const today = todayS();
     k = k || today;
-    const tasks = [...tasksOf(k), ...ST.focusTasks(k), ...ST.extraTasks(k)];
+    const tasks = withExtras(k);
     const left = Math.max(0, Math.round((toT(S.exam) - toT(today)) / DAY));
     const pct = Math.round(overall() * 100);
     const C = 2 * Math.PI * 42;
@@ -237,7 +260,8 @@
   }
 
   function taskHTML(t, i) {
-    const link = ST.taskLink(t) || (t.track === 'idioms' || t.track === 'idrev' ? '#/idioms'
+    const book = { errors: `#/books/errors${{ e1: 1, e2: 2, e3: 3 }[((t.ids || [])[0] || '').slice(0, 2)] || 1}`, er: `#/books/errors${{ e1: 1, e2: 2, e3: 3 }[((t.ids || [])[0] || '').slice(1, 3)] || 1}`, tb1: '#/books/training', tb2: '#/books/training', kk1: '#/books/kikutan', kk2: '#/books/kikutan' }[t.track];
+    const link = ST.taskLink(t) || book || (t.track === 'idioms' || t.track === 'idrev' ? '#/idioms'
       : /^tr/.test(t.track) ? `#/translate/${t.units[0]}` : '');
     const dyn = ST.taskMeta(t);
     return `
@@ -277,11 +301,12 @@
         const dt = new Date(toT(d));
         return `<a class="wday ${d === today ? 'today' : ''}" href="#/today/${d}">
           <div class="d"><b>${dt.getUTCDate()}</b><span>${WD[dt.getUTCDay()]}</span></div>
-          <div class="ts">${ts.length ? ts.filter((t) => !t.fixed).map((t) => `<b>${esc(t.name)}</b> ${esc(t.lines[0] ? t.lines[0].head : '')}`).join(' · ') || 'Journal' : (d === S.exam ? '<b>Exam</b>' : d < S.start || d > S.exam ? '—' : 'Rest')}</div>
+          <div class="ts">${ts.length ? ts.filter((t) => !t.fixed && t.lines[0]).map((t) => `<span class="wt"><b>${esc(t.name)}</b> ${esc(t.lines[0].head)}${t.lines[0].notes[0] ? `<small>${esc(t.lines[0].notes[0])}</small>` : ''}</span>`).join('') || 'Listening · Reading' : (d === S.exam ? '<b>Exam</b>' : d < S.start || d > S.exam ? '—' : 'Rest')}</div>
           <div class="pct">${r === null ? '' : `${Math.round(r * 100)}%`}</div>
         </a>`;
       }).join('')}</div>
 
+      <a class="jz-cta" href="#/books"><b>Books · 目次</b><span>本ごとの目次と、どの項目を何日にやるかの一覧。目次の直しもここで</span></a>
       <h2 class="section label">Year</h2>
       <div class="months">${months.map(([y, m]) => monthHTML(y, m, today)).join('')}</div>
       <div class="legend">Less <span class="cell"></span><span class="cell l1"></span><span class="cell l2"></span><span class="cell l3"></span><span class="cell l4"></span> More</div>
@@ -311,6 +336,114 @@
     return `<div class="month"><h4>${MON[m]} ${y}</h4><div class="grid7">${cells}</div></div>`;
   }
 
+  // ---------- Books：本ごとの目次と、どの項目を何日にやるか ----------
+  const BOOK_TABS = [['errors1', 'Errors I'], ['errors2', 'Errors II'], ['errors3', 'Errors III'], ['training', 'Training Book'], ['kikutan', 'Kikutan']];
+  const md = (k) => { const d = new Date(toT(k)); return `${MON[d.getUTCMonth()]} ${d.getUTCDate()}`; };
+  // 目次の貼り付けを読む。「ページ 題」「12. 題 …… 44」「題 44」のどれでもよい
+  function parseToc(text) {
+    return String(text || '').split(/\n/).map((l) => l.trim()).filter(Boolean).map((l) => {
+      // 「ページ 題」（ページの後が空白）
+      let m = /^(\d+)[\t ]+(.+)$/.exec(l);
+      if (m) return [+m[1], m[2].trim()];
+      // 「12. 題 …… 44」「題 44」（最後の数字がページ）
+      m = /^(.*?)[\s.…・。．]*(\d+)$/.exec(l);
+      return m && m[1] ? [+m[2], m[1].replace(/^\d+\s*[.．、:：]\s*/, '').trim()] : null;
+    }).filter((x) => x && x[1]);
+  }
+  function viewBooks(key) {
+    if (!BOOK_TABS.some((b) => b[0] === key)) key = 'errors1';
+    const B = window.BOOKS;
+    const when = new Map();
+    [...R.days.keys()].sort().forEach((d) => R.days.get(d).forEach((t) => (t.ids || []).forEach((id) => { if (!when.has(id)) when.set(id, d); })));
+    const dateCell = (id) => { const d = when.get(id); return d ? `<a class="d" href="#/today/${d}">${md(d)}</a>` : '<span class="d">–</span>'; };
+    const units = (tk) => (R.tracks.find((t) => t.key === tk) || { units: [] }).units;
+    let body = '';
+    let editor = '';
+    if (key.startsWith('errors')) {
+      const label = { errors1: 'I', errors2: 'II', errors3: 'III' }[key];
+      const us = units('errors').filter((u) => u.book === label);
+      let ch = null;
+      body = us.map((u) => {
+        const head = u.ch !== ch ? `<div class="toc-ch">${esc((ch = u.ch))}</div>` : '';
+        return `${head}<div class="toc-row ${done[u.id] ? 'done' : ''}"><span class="n">${u.n}</span><span class="t">${esc(u.title)}</span><span class="p">p.${u.p0}–${u.p1}</span>${dateCell(u.id)}<span class="d2">${when.get(`r${u.id}`) ? `review ${md(when.get(`r${u.id}`))}` : ''}</span></div>`;
+      }).join('');
+      editor = { hint: '1行に1項目。「開始ページ 題」か、目次のまま「12. 題 …… 44」の形で貼り付ける', text: us.map((u) => `${u.p0}\t${u.title}`).join('\n') };
+    } else if (key === 'training') {
+      const all = [...units('tb1'), ...units('tb2'), ...units('tbm1'), ...units('tbm2')];
+      const groups = [];
+      all.forEach((u) => {
+        const g = groups[groups.length - 1];
+        const k = `${u.step.id}|${u.sec ? u.sec.title : ''}`;
+        if (g && g.k === k) g.us.push(u); else groups.push({ k, step: u.step, sec: u.sec, us: [u] });
+      });
+      let st = null;
+      body = groups.map((g) => {
+        const head = g.step.id !== st ? `<div class="toc-ch">${esc(`${g.step.level} STEP ${g.step.step} · ${g.step.label}`)}</div>` : '';
+        st = g.step.id;
+        const a = g.us[0];
+        const b = g.us[g.us.length - 1];
+        const ok = g.us.filter((u) => done[u.id]).length;
+        const d0 = when.get(a.id);
+        const d1 = when.get(b.id);
+        return `${head}<div class="toc-row ${ok === g.us.length ? 'done' : ''}"><span class="n">Q${a.n}${b.n !== a.n ? `–${b.n}` : ''}</span><span class="t">${esc(g.sec ? g.sec.title : g.step.mock ? '模擬試験' : g.step.label)}</span><span class="p">${g.sec && g.sec.page ? `p.${g.sec.page}` : `${ok}/${g.us.length}`}</span>${d0 ? `<a class="d" href="#/today/${d0}">${md(d0)}</a>` : '<span class="d">–</span>'}<span class="d2">${d1 && d1 !== d0 ? `→ ${md(d1)}` : ''}</span></div>`;
+      }).join('');
+      editor = { hint: '1行に1つ：「STEP の記号 最初の問題番号 見出し ページ」（例：p1 1 政治・経済 12）。記号は p1–p5（準1級）、g1–g5（1級）', text: B.training.steps.flatMap((s) => ((S.toc[`training.${s.id}`] || s.sections || []).map((x) => `${s.id} ${x[0]} ${x[1]}${x[2] ? ` ${x[2]}` : ''}`))).join('\n') };
+    } else {
+      const us = units('kk1');
+      const r = units('kk2');
+      const weeks = [];
+      us.forEach((u, i) => { if (i % 7 === 0) weeks.push([]); weeks[weeks.length - 1].push(u); });
+      body = weeks.map((w, i) => {
+        const a = w[0];
+        const b = w[w.length - 1];
+        const titles = [...new Set(w.map((u) => u.title).filter(Boolean))].join(' / ');
+        const ok = w.filter((u) => done[u.id]).length;
+        const rv = r.find((x) => x.n === a.n);
+        return `<div class="toc-row ${ok === w.length ? 'done' : ''}"><span class="n">W${i + 1}</span><span class="t">Day ${a.n}–${b.n}${titles ? ` · ${esc(titles)}` : ''}</span><span class="p">${ok}/${w.length}</span>${dateCell(a.id)}<span class="d2">${rv && when.get(rv.id) ? `review ${md(when.get(rv.id))}` : ''}</span></div>`;
+      }).join('');
+      editor = { hint: '1行に1つ：「最初の Day 見出し」（例：1 名詞①）', text: (S.toc.kikutan || B.kikutan.weeks || []).map((x) => `${x[0]} ${x[1]}`).join('\n') };
+    }
+    app.innerHTML = `<div class="daynav"><a class="icon-btn" href="#/plan" aria-label="Back">${LEFT}</a><div class="date">Books<small>目次と予定</small></div><span style="width:36px"></span></div>
+      <div class="row" style="margin:0 0 14px;flex-wrap:wrap"><div class="seg">${BOOK_TABS.map(([k, l]) => `<a class="${k === key ? 'on' : ''}" href="#/books/${k}">${l}</a>`).join('')}</div></div>
+      <div class="toc">${body || '<p class="muted">まだ予定がありません。</p>'}</div>
+      <details class="toc-edit"><summary>目次を貼り付けて直す</summary>
+        <p class="muted small">${esc(editor.hint)}。保存すると予定と Today の表示に使われます。</p>
+        <textarea class="answer" id="tocText" spellcheck="false">${esc(editor.text)}</textarea>
+        <div class="actions"><button class="btn primary" id="tocSave">Save</button>${S.toc[key] || Object.keys(S.toc).some((x) => x.startsWith('training.')) && key === 'training' ? '<button class="btn" id="tocReset">Reset to built-in</button>' : ''}</div>
+      </details>`;
+    app.querySelector('#tocSave').addEventListener('click', () => {
+      const text = app.querySelector('#tocText').value;
+      if (key === 'training') {
+        const by = {};
+        text.split(/\n/).map((l) => l.trim()).filter(Boolean).forEach((l) => {
+          const m = /^([pg][1-5])\s+(\d+)\s+(.+?)(?:\s+(\d+))?$/i.exec(l);
+          if (m) (by[`training.${m[1].toLowerCase()}`] = by[`training.${m[1].toLowerCase()}`] || []).push([+m[2], m[3], m[4] ? +m[4] : null]);
+        });
+        Object.keys(S.toc).filter((x) => x.startsWith('training.')).forEach((x) => delete S.toc[x]);
+        Object.assign(S.toc, by);
+      } else if (key === 'kikutan') {
+        S.toc.kikutan = text.split(/\n/).map((l) => /^(\d+)\s+(.+)$/.exec(l.trim())).filter(Boolean).map((m) => [+m[1], m[2]]);
+      } else {
+        const items = parseToc(text);
+        const n = (B[key].items || []).length;
+        if (!items.length) { toast('読み取れる行がありません'); return; }
+        if (n && items.length !== n && !confirm(`${items.length} 項目です（今は ${n} 項目）。項目の数が変わると、済みの印がずれることがあります。保存しますか？`)) return;
+        S.toc[key] = items;
+      }
+      S.toc = { ...S.toc };
+      saveSettings();
+      toast('Saved');
+      viewBooks(key);
+    });
+    const rs = app.querySelector('#tocReset');
+    if (rs) rs.addEventListener('click', () => {
+      if (key === 'training') Object.keys(S.toc).filter((x) => x.startsWith('training.')).forEach((x) => delete S.toc[x]);
+      else delete S.toc[key];
+      saveSettings();
+      viewBooks(key);
+    });
+  }
+
   // ---------- Progress ----------
   const CATS = [
     ['Errors I', (id) => /^e1-/.test(id)],
@@ -327,7 +460,23 @@
     ['Translate · Redo', (id) => /^trr-/.test(id)],
   ];
 
+  // 弱点のまとめ：チェックポイントの分野・過去問の大問・問題の種類・Claude の添削の分類・書き取りの正答率
+  function weakPoints() {
+    const list = ST.weakPoints();
+    const dr = LS.dictRate(14);
+    if (dr != null && dr < 0.85) list.push({ label: 'Listening · Podcast dictation', rate: dr, link: '#/listen/today/dictation' });
+    const rated = list.filter((x) => x.rate != null).sort((a, b) => a.rate - b.rate);
+    return [...rated, ...list.filter((x) => x.rate == null)].slice(0, 6);
+  }
+  function weakHTML() {
+    const W = weakPoints();
+    return `<div class="weak"><h2 class="section label">Weak points</h2>${W.length ? `<div class="wlist">${W.map((x) => `<a class="wrow" href="${x.link}"><span class="t">${esc(x.label)}${x.note ? `<small>${esc(x.note)}</small>` : ''}</span><span class="v ${x.rate != null && x.rate < 0.7 ? 'ng' : ''}">${x.rate != null ? `${Math.round(x.rate * 100)}%` : `${x.count}×`}</span></a>`).join('')}</div>
+      <p class="muted small">日曜の Review で、この上から順に来週の Catch-up と Focus の時間を回してください。</p>` : '<p class="muted small">まだ十分な記録がありません。チェックポイント・過去問・添削を重ねると、ここに弱い順に出ます。</p>'}</div>`;
+  }
+
   function viewProgress() {
+    // Listen とドリルの記録は IndexedDB から読むので、読み終わったら描き直す
+    if (!LS.isReady() || !DR.isReady()) LS.whenReady(() => DR.whenReady(() => { if (app.dataset.view === 'progress') viewProgress(); }));
     const today = todayS();
     const ids = allIds();
     const due = new Set();
@@ -354,6 +503,7 @@
       </div>
       <div class="timeline">${R.P.map((p) => `<div style="width:${((p.b - p.a) / span) * 100}%"></div>`).join('')}<span class="past" style="width:${past * 100}%"></span></div>
       <div class="phases">${R.P.map((p) => `<div style="width:${((p.b - p.a) / span) * 100}%"><b>${p.id}</b>${p.name}</div>`).join('')}</div>
+      ${weakHTML()}
 
       <div class="dash"><div class="dcard">
       <h2 class="section label">Books</h2>
@@ -477,7 +627,9 @@
     }
     const x = TRANS[n - 1];
     if (!x) { location.hash = '#/translate'; return; }
-    const id = done[`tr-${n}`] ? `trr-${n}` : `tr-${n}`;
+    // 初回（tr-n）と、P4 のやり直し（trr-n）。やり直しは初回が済んでいて、P4 に入ってから
+    const inP4 = toT(todayS()) >= R.P[3].a;
+    const id = done[`tr-${n}`] && inP4 ? `trr-${n}` : `tr-${n}`;
     // 答えは Apple Pencil で書き、スクリブルで文字にする。Show の後に Claude アプリで添削できる
     const zhOut = x.dir === 'JA → ZH';
     let shown = false;
@@ -494,7 +646,7 @@
           <div class="actions">
             <button class="btn" id="show">Show</button>
             <span class="spacer"></span>
-            <button class="btn ${done[id] ? '' : 'accent'}" id="mark">${done[id] ? 'Undo' : 'Done'}</button>
+            <button class="btn ${done[id] ? '' : 'accent'}" id="mark">${id.startsWith('trr') ? (done[id] ? 'Undo redo' : 'Redo done') : done[id] ? 'Undo' : 'Done'}</button>
           </div>
         </div>
       </div>`;
@@ -522,7 +674,7 @@
       if (done[id]) delete done[id];
       else done[id] = todayS();
       store.set('done', done);
-      e.target.textContent = done[id] ? 'Undo' : 'Done';
+      e.target.textContent = id.startsWith('trr') ? (done[id] ? 'Undo redo' : 'Redo done') : done[id] ? 'Undo' : 'Done';
       e.target.classList.toggle('accent', !done[id]);
     });
     app.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { location.hash = `#/translate/${b.dataset.go}`; }));
@@ -539,9 +691,10 @@
         <label class="field"><span class="label">Exam</span><input type="date" id="exam" value="${S.exam}"></label>
         <div class="field"><span class="label">Rest days</span>
           <div class="dow">${DOW.map((d, i) => `<button type="button" data-d="${i}" class="${S.rest.includes(i) ? 'on' : ''}" aria-pressed="${S.rest.includes(i)}">${d}</button>`).join('')}</div></div>
-        <label class="field"><span class="label">Journal · min / day</span><input type="number" id="journal" min="10" max="180" step="5" value="${S.journal}"></label>
+        <label class="field"><span class="label">Study · min / day</span><input type="number" id="daily" min="60" max="480" step="15" value="${S.daily}"><span class="muted small">教材の分量は、毎日この時間に収まるように割り振ります</span></label>
+        <label class="field"><span class="label">Listening · min / day</span><input type="number" id="journal" min="20" max="120" step="5" value="${S.journal}"><span class="muted small">中国語ジャーナル＋ポッドキャスト</span></label>
         <label class="field"><span class="label">Input phase · extra days</span><input type="number" id="shift" min="0" max="42" step="7" value="${S.inputShift || 0}"></label>
-        <label class="field"><span class="label">Errors I · start page × 100</span><textarea id="e1" placeholder="1, 5, 9, …">${esc(S.e1Pages)}</textarea></label>
+        <div class="field"><span class="label">Books</span><a class="btn" href="#/books">目次と予定</a></div>
         <div class="field"><span class="label">Theme</span>
           <div class="seg">${['system', 'light', 'dark'].map((t) => `<button type="button" data-theme="${t}" class="${theme === t ? 'on' : ''}">${t[0].toUpperCase() + t.slice(1)}</button>`).join('')}</div></div>
         <div class="field"><span class="label">Plan</span>
@@ -559,9 +712,9 @@
     });
     bind('#start', 'start');
     bind('#exam', 'exam');
+    bind('#daily', 'daily', Number);
     bind('#journal', 'journal', Number);
     bind('#shift', 'inputShift', Number);
-    bind('#e1', 'e1Pages');
     app.querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => {
       const d = +b.dataset.d;
       S.rest = S.rest.includes(d) ? S.rest.filter((x) => x !== d) : [...S.rest, d];
@@ -604,8 +757,8 @@
       }
     });
     app.querySelector('#wipe').addEventListener('click', () => {
-      if (!confirm('Erase all progress?')) return;
-      S = { ...window.Plan.DEFAULTS };
+      if (!confirm('学習の記録をすべて消しますか？（過去問データ・ポッドキャストの音声・メモの手書き・設定した日程と目次は残ります）')) return;
+      S = { ...window.Plan.DEFAULTS, start: S.start, exam: S.exam, rest: S.rest, daily: S.daily, journal: S.journal, toc: S.toc };
       done = {}; fixed = {}; srs = {}; drafts = {};
       ['done', 'fixed', 'srs', 'drafts'].forEach((k) => store.set(k, {}));
       ST.importData({});
@@ -627,7 +780,7 @@
 
   function route() {
     const [, view = 'today', arg, arg2] = location.hash.split('/');
-    const tab = { check: 'today', drill: 'today', method: 'papers', guide: 'papers', zhdrill: 'translate' }[view] || view;
+    const tab = { check: 'today', drill: 'today', method: 'papers', guide: 'papers', zhdrill: 'translate', books: 'plan' }[view] || view;
     document.querySelectorAll('.tabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === tab));
     app.dataset.view = view;
     const sc = document.getElementById('sidecount');
@@ -636,6 +789,7 @@
     if (route.last !== location.hash) { ST.stop(); LS.stop(); if (!(view === 'check' && arg2 === 'result')) ST.resetSession(); }
     route.last = location.hash;
     if (view === 'plan') viewPlan(arg);
+    else if (view === 'books') viewBooks(arg);
     else if (view === 'idioms') { idMode = ['vocab', 'hanzi', 'groups', 'all'].includes(arg) ? arg : 'study'; viewIdioms(); }
     else if (view === 'papers') {
       if (!arg) ST.viewPapers();

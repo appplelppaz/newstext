@@ -1,6 +1,6 @@
 // オフライン用の Service Worker。アプリのファイルを端末にキャッシュし、電波がなくても開けるようにする
 // ファイルを足したら PRECACHE に入れ、VERSION を上げる（tools/check-offline.js で確認できる）
-const VERSION = 'level1-v5';
+const VERSION = 'level1-v6';
 const FONTS = 'level1-fonts';
 const PRECACHE = [
   './',

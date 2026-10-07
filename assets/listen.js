@@ -386,10 +386,11 @@ window.Listen = function Listen(ctx) {
     const days = pod._days || {};
     const keys = Object.keys(days).sort();
     if (!keys.length && !Object.keys(PODS).length) return '';
-    const last = (n) => keys.slice(-n).map((k) => days[k]);
+    // 「今週」は暦の直近7日（練習した日の数ではない）
+    const since = (n) => keys.filter((k) => k > addDaysS(todayS(), -n)).map((k) => days[k]);
     const sum = (l, f) => l.reduce((a, x) => a + (x[f] || 0), 0);
-    const w = last(7);
-    const all = last(400);
+    const w = since(7);
+    const all = keys.map((k) => days[k]);
     const rate = (l) => (sum(l, 'chars') ? Math.round((sum(l, 'ok') / sum(l, 'chars')) * 100) : null);
     const r7 = rate(w);
     const rAll = rate(all);
@@ -403,8 +404,18 @@ window.Listen = function Listen(ctx) {
 
   loadAll();
 
+  // 直近 n 日の書き取りの正答率（字の数が少なければ null）
+  function dictRate(n = 14) {
+    const days = pod._days || {};
+    const l = Object.keys(days).filter((k) => k > addDaysS(todayS(), -n)).map((k) => days[k]);
+    const chars = l.reduce((a, x) => a + (x.chars || 0), 0);
+    return chars >= 50 ? l.reduce((a, x) => a + (x.ok || 0), 0) / chars : null;
+  }
+
   return {
-    view, viewLibrary, progressHTML, stop,
+    view, viewLibrary, progressHTML, stop, dictRate,
+    whenReady: (f) => (ready ? f() : onReady.push(f)),
+    isReady: () => ready,
     exportData: () => pod,
     importData: (d) => { pod = d || {}; save(); },
   };

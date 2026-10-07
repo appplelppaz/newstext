@@ -2,7 +2,7 @@
 window.Study = function Study(ctx) {
   'use strict';
 
-  const { app, store, esc, toast, todayS, addDays, LEFT, RIGHT } = ctx;
+  const { app, store, esc, toast, todayS, addDays, LEFT } = ctx;
   const IDX = window.PAPERS_INDEX;
   const CH = window.CHECKS;
   const G = window.GUIDE;
@@ -16,6 +16,8 @@ window.Study = function Study(ctx) {
   // ---------- 保存 ----------
   let qa = store.get('qa', {}); // 問題ごとの解答履歴と復習間隔
   let scores = store.get('scores', {}); // scores[paper][sec] = [{d, s, max}]
+  // 以前の版でチェックポイントの答えが Mistakes の記録（ck|…）に入っていたので取り除く（結果は cpr にある）
+  Object.keys(qa).filter((k) => k.startsWith('ck|')).forEach((k) => { delete qa[k]; });
   let texts = store.get('texts', {}); // 記述問題の自分の答え
   let vsrs = store.get('vsrs', {}); // 過去問語彙カードの復習間隔
   let cpq = store.get('cpq', {}); // チェックポイントの出題（一度作ったら固定）
@@ -335,7 +337,7 @@ window.Study = function Study(ctx) {
     char: ['誤字・字体', '誤字・脱字、繁体字や日本の字体の混用', 'Hanzi デッキで書けなかった字を書く', '#/idioms/hanzi'],
     logic: ['構成・論理', '段落のつながり、接続表現、論理の飛躍', '要約の「How to build it」を読み、構成を真似て1題書く', '#/papers'],
     point: ['要点の欠落', '要約で原文の要点が抜けている', '要約を1題、要点を先に箇条書きしてから書く', '#/papers'],
-    form: ['字数・形式', '字数の過不足、指定語の使い忘れ、下線など', '字数を数えながら作文を1題', '#/translate'],
+    form: ['字数・形式', '字数の過不足、指定語の使い忘れ、下線など', '日文中訳ドリルで、字数を意識して1題', '#/zhdrill'],
   };
   // 添削の記録：fb[key] = [{ d, score, max, tags, weak, kind, text }]（新しいものが後ろ）
   let fb = store.get('fb', {});
@@ -1158,7 +1160,7 @@ window.Study = function Study(ctx) {
         <div class="stats">${Object.entries(areas).map(([a, c]) => `<span class="chip">${AREA[a]} ${c}</span>`).join('')}<span class="chip">≈ 40 min</span></div>
         <div class="actions"><button class="btn primary" id="go">Start</button>${res ? '<button class="btn" id="seeres">Last result</button>' : ''}</div>`;
       app.querySelector('#go').addEventListener('click', () => {
-        startMC(list, (r) => finishCheck(n, r), { noCause: true });
+        startMC(list, (r) => finishCheck(n, r), { noCause: true, noRecord: true });
         st.cp = n;
         app.innerHTML = `${head}<div id="mc"></div>`;
         renderMC(app.querySelector('#mc'));
@@ -1230,7 +1232,7 @@ window.Study = function Study(ctx) {
     if (wordAcc != null && wordAcc < 0.6) out.push('語彙・成語が弱点です。1級の長文は語の98%前後が分かって初めて楽に読めます。新出カードの数を増やし、字ごとの意味で覚えてください。');
     const wr = A.areas.find((a) => a.k === 'writing');
     if (wr && wr.acc < 0.7) out.push('手で書く力が弱めです。本番の記述（中訳・要約・書き取り）はすべて手書きなので、読める字でも書けないと減点されます。Hanzi デッキを毎日10字、Apple Pencil で書いてください。');
-    if (n === 2 && A.total < 0.7) out.push('インプット期の終わりの時点で7割に届いていません。翻訳（アウトプット）の開始を2週間遅らせ、その分をインプットに回すことを勧めます。');
+    if (n === 2 && A.total < 0.7) out.push('インプット期の終わりの時点で7割に届いていません。翻訳演習（Translate の50題）と P2 の開始を2週間遅らせ（日文中訳ドリルはそのまま続けます）、その分をインプットに回すことを勧めます。');
     const W = fbStats(30);
     if (W.tags.length) out.push(`Claude の添削で多い誤り（直近30日）：${W.tags.slice(0, 3).map(([t, n]) => `${FB_TAGS[t][0]} ${n}件`).join('、')}。Today の Writing focus で集中して直します。`);
     if (A.prev != null) out.push(`前回の CP から ${A.total >= A.prev ? '+' : ''}${Math.round((A.total - A.prev) * 100)} ポイント。`);
@@ -1355,7 +1357,32 @@ window.Study = function Study(ctx) {
     }
     return out;
   }
+  // 過去問の大問ごとの最新の得点率。低い順
+  function weakSections() {
+    const out = [];
+    Object.entries(scores).forEach(([pid, secs]) => Object.entries(secs).forEach(([sec, h]) => {
+      const last = h[h.length - 1];
+      if (last && last.max) out.push({ pid, sec, rate: last.s / last.max, label: `${title(pid)} ${SEC_NAME[sec] || sec}` });
+    }));
+    return out.sort((a, b) => a.rate - b.rate);
+  }
+  // 弱点のまとめ（Progress の Weak points と日曜の Review 用）。rate は低いほど弱い
+  function weakPoints() {
+    const out = [];
+    const cps = Object.keys(cpr).map(Number).sort((a, b) => a - b);
+    if (cps.length) {
+      const A = analyze(cps[cps.length - 1]);
+      A.areas.filter((a) => a.acc < A.target).forEach((a) => out.push({ label: `Checkpoint · ${AREA[a.k] || a.k}`, rate: a.acc, link: `#/check/${cps[cps.length - 1]}/result` }));
+    }
+    weakSections().filter((x) => x.rate < 0.85).slice(0, 3).forEach((x) => out.push({ label: `Past paper · ${x.label}`, rate: x.rate, link: `#/papers/${x.pid}/${x.sec}` }));
+    const A = analytics();
+    A.tags.filter((t) => t.n >= 5 && t.acc < 0.75 && t.k !== 'other').slice(0, 2).forEach((t) => out.push({ label: `Question type · ${TAGS[t.k] || t.k}`, rate: t.acc, link: '#/papers/review' }));
+    const W = fbStats(30);
+    W.tags.slice(0, 3).filter(([, n]) => n >= 2).forEach(([t, n]) => out.push({ label: `Claude · ${FB_TAGS[t][0]}`, count: n, link: FB_TAGS[t][3], note: FB_TAGS[t][2] }));
+    return out;
+  }
   function taskMeta(t) {
+    if (t.track === 'ppfix') { const w = weakSections().slice(0, 2); return w.length ? w.map((x) => `${x.label} ${pct(x.rate)}`).join(' · ') : 'no paper scores yet'; }
     if (t.track === 'mistakes') return `${dueQids().length} due`;
     if (t.track === 'vocab') { const v = vocabList(); return v.length ? `${vocabQueue().length} cards` : 'import papers first'; }
     return null;
@@ -1366,6 +1393,7 @@ window.Study = function Study(ctx) {
     if (t.track === 'vocab') return '#/idioms/vocab';
     if (t.track === 'cp') return `#/check/${t.cp}`;
     if (t.track === 'weekly') return '#/progress';
+    if (t.track === 'ppfix') { const w = weakSections()[0]; return w ? `#/papers/${w.pid}/${w.sec}` : '#/papers/review'; }
     if (t.link) return t.link;
     return '';
   }
@@ -1390,7 +1418,7 @@ window.Study = function Study(ctx) {
 
   return {
     viewPapers, viewPaper, viewSection, viewReview, viewVocab, viewGroups, viewHanzi, viewCheck, viewCheckResult, viewDrill,
-    viewMethod, viewGuide, progressHTML, focusTasks, extraTasks, taskMeta, taskLink, importFiles,
+    viewMethod, viewGuide, progressHTML, focusTasks, extraTasks, taskMeta, taskLink, importFiles, weakPoints,
     tapHTML, scribbleInput, gradePrompt, claudeHTML, resultHTML, diffChars, hzFromDiff, addHz, isTrad: (c) => TRAD.has(c), FB_TAGS,
     addFb: (key, entry) => { (fb[key] = fb[key] || []).push(entry); saveFb(); },
     hzCount: () => [hzDue().length, Object.keys(hz).length],
