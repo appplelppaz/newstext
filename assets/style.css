@@ -619,3 +619,12 @@ mark.jz-hl { background: color-mix(in srgb, var(--accent) 14%, transparent); col
 .wrow .t small { display: block; color: var(--muted); font-size: 12px; }
 .wrow .v { font-variant-numeric: tabular-nums; font-weight: 600; }
 .wrow .v.ng { color: var(--accent); }
+
+/* ---------- iPad（指で押す端末）：押しやすい大きさ（44pt 以上） ---------- */
+@media (pointer: coarse) {
+  .btn, .btn.sm, .seg a, .seg button, .ink-b, .chip[href], button.chip { min-height: 44px; }
+  .btn.sm { padding-left: 14px; padding-right: 14px; }
+  .mini { min-width: 40px; height: 40px; }
+  .seg a, .seg button { display: inline-flex; align-items: center; }
+  .toc-row .d { padding: 6px 0; }
+}

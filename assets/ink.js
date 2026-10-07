@@ -178,30 +178,33 @@ window.Ink = (function () {
       }
     }
     const capture = (e) => { try { c.setPointerCapture(e.pointerId); } catch (err) { /* 合成イベントなど */ } };
+    // 指（スクロール）とペン（線）は pointerId で分けて扱う。書いている途中に手のひらが触れても、線は途切れない
     c.addEventListener('pointerdown', (e) => {
-      if (e.pointerType === 'touch' && penSeen()) {
-        finger = { y: e.clientY, el: scroller(c) };
+      if (e.pointerType === 'touch' && (penSeen() || cur)) {
+        if (cur) return; // ペンで書いている最中の指・手のひらは無視する
+        finger = { id: e.pointerId, y: e.clientY, el: scroller(c) };
         capture(e);
         return;
       }
+      if (cur) return; // 書いている最中に別のペン・マウスが来ても、今の線を優先する
       if (e.pointerType === 'pen') setPen();
       e.preventDefault();
       const p = pt(e);
       capture(e);
-      if (mode === 'erase') { cur = { erase: true }; eraseAt(p); return; }
-      cur = { w: 0.42, pts: [p] };
+      if (mode === 'erase') { cur = { id: e.pointerId, erase: true }; eraseAt(p); return; }
+      cur = { id: e.pointerId, w: 0.42, pts: [p] };
       ctx2.strokeStyle = inkColor();
       ctx2.lineCap = 'round';
       ctx2.lineJoin = 'round';
     });
     c.addEventListener('pointermove', (e) => {
-      if (finger) {
+      if (finger && e.pointerId === finger.id) {
         const dy = e.clientY - finger.y;
         finger.y = e.clientY;
         if (finger.el) finger.el.scrollTop -= dy; else window.scrollBy(0, -dy);
         return;
       }
-      if (!cur) return;
+      if (!cur || e.pointerId !== cur.id) return;
       const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
       (evs.length ? evs : [e]).forEach((ev) => {
         const p = pt(ev);
@@ -212,12 +215,13 @@ window.Ink = (function () {
         drawSeg(cur, cur.pts.length - 1);
       });
     });
-    const end = () => {
-      if (finger) { finger = null; return; }
-      if (!cur) return;
+    const end = (e) => {
+      if (finger && e.pointerId === finger.id) { finger = null; return; }
+      if (!cur || e.pointerId !== cur.id) return;
       const s = cur;
       cur = null;
       if (s.erase) return;
+      delete s.id;
       undoStack.push(st.strokes);
       st.strokes = [...st.strokes, s];
       redraw();
@@ -260,5 +264,21 @@ window.Ink = (function () {
     clear: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/></svg>',
   };
 
-  return { pad, db, isHan: (ch) => HAN.test(ch), chars, onToast: (f) => { toastFn = f; } };
+  // バックアップ：メモ帳の線をすべて書き出す・戻す（Settings の Export / Import）
+  async function exportAll() {
+    try {
+      const d = await db();
+      return await new Promise((res) => { const q = d.transaction('ink').objectStore('ink').getAll(); q.onsuccess = () => res(q.result || []); q.onerror = () => res([]); });
+    } catch (e) { return []; }
+  }
+  async function importAll(list) {
+    if (!Array.isArray(list) || !list.length) return 0;
+    try {
+      const d = await db();
+      await new Promise((res, rej) => { const tx = d.transaction('ink', 'readwrite'); list.forEach((r) => r && r.k && tx.objectStore('ink').put(r)); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+      return list.length;
+    } catch (e) { return 0; }
+  }
+
+  return { pad, db, exportAll, importAll, isHan: (ch) => HAN.test(ch), chars, onToast: (f) => { toastFn = f; } };
 })();
