@@ -180,9 +180,9 @@ window.Study = function Study(ctx) {
       const loaded = !!PAPERS[m.id];
       const sc = paperScore(m.id);
       const pass = IDX.pass[m.level];
-      const scoreTxt = sc.l == null && sc.w == null ? '' : `<span class="${sc.l >= pass.listening ? 'ok' : 'ng'}">L ${sc.l == null ? '–' : sc.l}</span> <span class="${sc.w >= pass.written ? 'ok' : 'ng'}">W ${sc.w == null ? '–' : sc.w}</span>`;
+      const scoreTxt = sc.any ? `L ${scoreLabel(sc.l, sc.ln, 2, pass.listening)} W ${scoreLabel(sc.w, sc.wn, 5, pass.written)}` : '';
       return loaded
-        ? `<a class="prow" href="#/papers/${m.id}"><span class="t">${title(m.id)}</span><span class="muted">${m.date}</span><span class="spacer"></span><span class="sc">${scoreTxt}</span></a>`
+        ? `<a class="prow" href="#/papers/${m.id}"><span class="t">${title(m.id)}</span><span class="muted">${m.date}</span>${oldFormat(m.id) ? '<span class="chip">旧形式</span>' : ''}<span class="spacer"></span><span class="sc">${scoreTxt}</span></a>`
         : `<div class="prow off"><span class="t">${title(m.id)}</span><span class="muted">${m.date}</span><span class="spacer"></span><a class="muted" href="${pdf(m.drive.T)}" target="_blank" rel="noopener">PDF</a></div>`;
     };
     app.innerHTML = `
@@ -194,6 +194,7 @@ window.Study = function Study(ctx) {
       </div>
       ${have ? '' : `<p class="muted small">Drive の <a href="${IDX.folder}" target="_blank" rel="noopener">過去問フォルダ</a> にある <b>paper-*.json</b> を選んで読み込みます（複数選択可）。データはこの端末の中にだけ保存されます。</p>`}
       <a class="task link-card" href="#/papers/review"><div class="body"><div class="name"><b>Mistakes</b><span class="min">${due} due</span></div><div class="meta">間違えた問題と勘で当たった問題を、間隔を空けて解き直す</div></div></a>
+      <p class="muted small">「旧形式」は第113回までの問題です（リスニングの書き取り・作文など、今は出ない大問を含みます）。今の形式の実力は、第114回以降の回で測ってください。点数は大問ごとの最新点で、全大問を採点した回だけ合計を出します。別々の日に解いた点の合計なので、本番の得点の予測ではありません。</p>
       <div class="cols2">
         <div><h2 class="section label">Level 1</h2>${IDX.papers.filter((m) => m.level === 'L1').map(row).join('')}</div>
         <div><h2 class="section label">Pre-1</h2>${IDX.papers.filter((m) => m.level === 'P1').map(row).join('')}</div>
@@ -202,12 +203,19 @@ window.Study = function Study(ctx) {
     app.querySelector('#pimport').addEventListener('change', async (e) => { if (await importFiles(e.target.files)) viewPapers(); });
   }
 
+  // 合計は、全大問を採点したときだけ出す（未採点を0点として足さない）。
+  // 別の日に解いた大問の最新点の合計なので、本番の得点や合格の予測ではない
   function paperScore(pid) {
     const sc = scores[pid] || {};
     const last = (sec) => (sc[sec] && sc[sec].length ? sc[sec][sc[sec].length - 1].s : null);
-    const sum = (secs) => { const v = secs.map(last); return v.every((x) => x == null) ? null : v.reduce((a, b) => a + (b || 0), 0); };
-    return { l: sum(['L1', 'L2']), w: sum(['W1', 'W2', 'W3', 'W4', 'W5']) };
+    const part = (secs) => { const v = secs.map(last); const n = v.filter((x) => x != null).length; return { n, of: secs.length, sum: n === secs.length ? v.reduce((a, b) => a + b, 0) : null }; };
+    const L = part(['L1', 'L2']);
+    const W = part(['W1', 'W2', 'W3', 'W4', 'W5']);
+    return { l: L.sum, w: W.sum, ln: L.n, wn: W.n, any: L.n + W.n > 0 };
   }
+  // 1級・準1級は第114回（2025年3月）から形式が変わった：リスニングの書き取り・筆記の語句書き取り・作文がなくなり、リスニングに長文の要約が入った
+  const oldFormat = (pid) => +String(pid).split('-')[1] < 114;
+  const scoreLabel = (v, n, of, need) => (v != null ? `<span class="${v >= need ? 'ok' : 'ng'}">${v}</span>` : n ? `<span class="muted">${n}/${of} 大問</span>` : '–');
   function saveScore(pid, sec, s, max) {
     scores[pid] = scores[pid] || {};
     (scores[pid][sec] = scores[pid][sec] || []).push({ d: todayS(), s: Math.round(s), max });
@@ -228,9 +236,10 @@ window.Study = function Study(ctx) {
     app.innerHTML = `
       <div class="daynav"><a class="icon-btn" href="#/papers" aria-label="Back">${LEFT}</a><div class="date">${title(pid)}<small>${m.date}</small></div><span style="width:36px"></span></div>
       <div class="bars">
-        <div class="bar-row"><div class="row"><span>Listening</span><span>${sc.l == null ? '–' : sc.l} / 100 · pass ${pass.listening}</span></div>${bar(sc.l, pass.listening)}</div>
-        <div class="bar-row"><div class="row"><span>Written</span><span>${sc.w == null ? '–' : sc.w} / 100 · pass ${pass.written}</span></div>${bar(sc.w, pass.written)}</div>
+        <div class="bar-row"><div class="row"><span>Listening</span><span>${sc.l == null ? `${sc.ln}/2 大問採点` : `${sc.l} / 100`} · pass ${pass.listening}</span></div>${bar(sc.l, pass.listening)}</div>
+        <div class="bar-row"><div class="row"><span>Written</span><span>${sc.w == null ? `${sc.wn}/5 大問採点` : `${sc.w} / 100`} · pass ${pass.written}</span></div>${bar(sc.w, pass.written)}</div>
       </div>
+      ${oldFormat(pid) ? '<p class="note-box">旧形式（第113回まで）の問題です。リスニング2の書き取りは今の試験には出ません（今は長文の要約）。語彙・読解・翻訳の練習として使ってください。</p>' : ''}
       <div class="actions"><button class="btn" id="timer">${timerLeft ? `${Math.ceil(timerLeft / 60000)} min left · Stop` : `Timer ${IDX.minutes[m.level]} min`}</button>
         <a class="btn" href="${pdf(m.drive.T)}" target="_blank" rel="noopener">PDF</a></div>
       ${p.notes ? `<div class="note-box">${esc(p.notes)}</div>` : ''}
@@ -1295,7 +1304,7 @@ window.Study = function Study(ctx) {
     });
     const tags = Object.entries(byTag).map(([k, v]) => ({ k, ...v, acc: v.ok / v.n })).sort((a, b) => a.acc - b.acc);
     const causes = Object.entries(byCause).sort((a, b) => b[1] - a[1]);
-    const papers = IDX.papers.map((m) => ({ m, s: paperScore(m.id) })).filter((x) => x.s.l != null || x.s.w != null);
+    const papers = IDX.papers.map((m) => ({ m, s: paperScore(m.id) })).filter((x) => x.s.any);
     return { tags, causes, week, papers, weakest: tags.find((t) => t.n >= 5) };
   }
   // Claude の添削の集計：直近 days 日のタグ別件数、最近の得点率、最近の弱点
@@ -1325,7 +1334,7 @@ window.Study = function Study(ctx) {
       <h2 class="section label">This week</h2>
       <div class="stats"><span class="chip">${A.week.n} answers</span><span class="chip">${A.week.n ? pct(A.week.ok / A.week.n) : '–'} correct</span>${A.weakest ? `<span class="chip accent">Focus: ${TAGS[A.weakest.k] || A.weakest.k}</span>` : ''}${A.causes[0] ? `<span class="chip">Top cause: ${causeName[A.causes[0][0]]}</span>` : ''}</div>
       ${cps.length ? `<h2 class="section label">Checkpoints</h2><div class="cp-line">${cps.map((n) => { const a = analyze(n); return `<a href="#/check/${n}/result" class="cp-dot ${CH.targets[n] && a.total < CH.targets[n] ? 'ng' : 'ok'}"><b>${Math.round(a.total * 100)}</b><span>CP${n}</span></a>`; }).join('')}</div>` : ''}
-      ${A.papers.length ? `<h2 class="section label">Past papers</h2>${A.papers.map(({ m, s }) => { const p = IDX.pass[m.level]; return `<a class="prow" href="#/papers/${m.id}"><span class="t">${title(m.id)}</span><span class="spacer"></span><span class="${s.l >= p.listening ? 'ok' : 'ng'}">L ${s.l == null ? '–' : s.l}</span>&nbsp;<span class="${s.w >= p.written ? 'ok' : 'ng'}">W ${s.w == null ? '–' : s.w}</span></a>`; }).join('')}` : ''}
+      ${A.papers.length ? `<h2 class="section label">Past papers</h2><p class="muted small">大問ごとの最新点。全大問を採点した回だけ合計（本番の得点の予測ではありません）。</p>${A.papers.map(({ m, s }) => { const p = IDX.pass[m.level]; return `<a class="prow" href="#/papers/${m.id}"><span class="t">${title(m.id)}</span>${oldFormat(m.id) ? '<span class="chip">旧形式</span>' : ''}<span class="spacer"></span>L ${scoreLabel(s.l, s.ln, 2, p.listening)}&nbsp; W ${scoreLabel(s.w, s.wn, 5, p.written)}</a>`; }).join('')}` : ''}
       ${A.tags.length ? `<h2 class="section label">By question type</h2><div class="bars">${A.tags.map((t) => `<div class="bar-row"><div class="row"><span>${TAGS[t.k] || t.k}</span><span>${t.ok} / ${t.n}</span></div><div class="meter"><i style="width:${t.acc * 100}%"></i></div></div>`).join('')}</div>` : ''}
       ${writingHTML()}
       ${A.causes.length ? `<h2 class="section label">Causes of mistakes</h2><div class="bars">${A.causes.map(([c, k]) => `<div class="bar-row"><div class="row"><span>${causeName[c]}</span><span>${k}</span></div><div class="meter"><i style="width:${(k / A.causes[0][1]) * 100}%"></i></div></div>`).join('')}</div>` : ''}`;
@@ -1362,7 +1371,8 @@ window.Study = function Study(ctx) {
     const out = [];
     Object.entries(scores).forEach(([pid, secs]) => Object.entries(secs).forEach(([sec, h]) => {
       const last = h[h.length - 1];
-      if (last && last.max) out.push({ pid, sec, rate: last.s / last.max, label: `${title(pid)} ${SEC_NAME[sec] || sec}` });
+      // 旧形式のリスニング2（書き取り）は今の試験に出ないので、やり直しの対象にしない
+      if (last && last.max && !(oldFormat(pid) && sec === 'L2')) out.push({ pid, sec, rate: last.s / last.max, label: `${title(pid)} ${SEC_NAME[sec] || sec}` });
     }));
     return out.sort((a, b) => a.rate - b.rate);
   }

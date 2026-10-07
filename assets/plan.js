@@ -135,7 +135,7 @@
       { key: 'ppA', name: 'Past Papers', pair: true, from: p2.a, to: p2.b, days: on(6), units: paperUnits([['P1-109', 1], ['P1-110', 1], ['P1-111', 1], ['P1-112', 1]]) },
       { key: 'ppB', name: 'Past Papers', pair: true, from: p3.a, to: p3cut, days: on(6), units: paperUnits([['P1-113', 1], ['P1-114', 1], ['P1-115', 1], ['P1-116', 1]]) },
       { key: 'ppL', name: 'Past Papers', pair: true, from: p3cut, to: p3.b, days: on(6), units: paperUnits([['L1-110', 1]], { timed: true }) },
-      { key: 'ppF', name: 'Past Papers', pair: true, from: p4.a, to: exam - DAY, days: on(6), units: paperUnits([['L1-113', 1], ['L1-110', 2], ['L1-116', 1, true], ['L1-113', 2], ['L1-116', 2]], { timed: true }) },
+      { key: 'ppF', name: 'Past Papers', pair: true, from: p4.a, to: exam - DAY, days: on(6), units: paperUnits([['L1-113', 1], ['P1-114', 2], ['L1-116', 1, true], ['P1-117', 2], ['L1-116', 2]], { timed: true }) },
 
       // 以下の教材は「min」を目安の比率として、その日の空き時間（daily − 固定タスク）を分け合う
       // P1 Foundation
@@ -327,7 +327,8 @@
           us.forEach((u) => {
             const head = `${LV[u.level] || u.level} #${u.round}`;
             const tag = u.mock ? 'Mock' : tr.diag ? 'Diagnostic' : u.pass > 1 ? 'Round 2' : '';
-            const notes = tag ? [tag] : [];
+            // 第113回までは旧形式（リスニングは書き取り。今は要約）
+            const notes = [tag, u.round < 114 ? '旧形式' : ''].filter(Boolean);
             const base = { track: tr.key, name: tr.name, paper: u.paper };
             add(t, { ...base, key: `${u.id}-w`, min: 120, ids: [`${u.id}-w`], lines: [{ head, meta: u.timed ? 'Written · timed' : 'Written', notes }] });
             const sun = t + DAY < exam ? t + DAY : t;
@@ -343,6 +344,16 @@
     const cpDays = checkpointDays(S, P);
     cpDays.forEach((t, i) => add(t, { key: `cp-${i}`, track: 'cp', name: 'Checkpoint', min: 40, ids: [`cp-${i}`], cp: i, lines: [{ head: `CP${i}`, meta: i === 0 ? 'baseline quiz' : 'quiz · analysis', notes: [] }] }));
 
+    // 要約（現行形式のリスニング2）は毎週1回。水曜が休みなら、同じ週の別の日に振り替える
+    const summaryDay = (t) => {
+      const mon = t - ((dow(t) + 6) % 7) * DAY;
+      for (const off of [2, 3, 1, 4, 0, 5, 6]) {
+        const d = mon + off * DAY;
+        if (d >= P[0].a && d < exam && !S.rest.includes(dow(d))) return d;
+      }
+      return null;
+    };
+
     // 3. 毎日の固定タスク（時間だけ決まっているもの）
     for (let t = P[0].a; t < exam; t += DAY) {
       if (S.rest.includes(dow(t))) continue;
@@ -352,9 +363,9 @@
       const lm = Math.max(20, +S.journal || DEFAULTS.journal);
       const pm = Math.max(10, Math.round((lm * 0.375) / 5) * 5);
       add(t, { key: 'journal', track: 'journal', name: 'Journal', min: lm - pm, fixed: `${k}|journal`, lines: [{ head: '中国語ジャーナル', meta: 'real voices', notes: ['通しで聞く（スクリプトは見ない）', 'スクリプトで確かめる', '分からなかった文を3回聞き直す', 'シャドーイング（1記事）'] }] });
-      const pmode = ph === 0 ? 'dictation' : dow(t) === 3 ? 'summary' : dow(t) % 2 ? 'dictation' : 'shadow';
-      const PMODE = { dictation: ['Dictation', '10 sentences · then Shadow', ['1文ずつ聞く → スクリブルで書く → Check', '聞き取れなかった字は Hanzi へ']], shadow: ['Shadow', '10 sentences', ['原稿を見て3回重ねる → 原稿を隠して2回']], summary: ['Summary', '1 chunk · 180–200字', ['3回まで聞いてメモ → 要約 → Claude で添削']] };
-      add(t, { key: 'podcast', track: 'podcast', name: 'Podcast', min: pm, fixed: `${k}|podcast`, link: `#/listen/today/${pmode}`, lines: [{ head: PMODE[pmode][0], meta: PMODE[pmode][1], notes: PMODE[pmode][2] }] });
+      const pmode = t === summaryDay(t) ? 'summary' : ph === 0 ? (dow(t) % 2 ? 'dictation' : 'shadow') : dow(t) % 2 ? 'dictation' : 'shadow';
+      const PMODE = { dictation: ['Dictation', '10 sentences · then Shadow', ['1文ずつ聞く → スクリブルで書く → Check', '聞き取れなかった字は Hanzi へ（本番に書き取りはないので、聞こえない音を見つけるための練習）']], shadow: ['Shadow', '10 sentences', ['原稿を見て3回重ねる → 原稿を隠して2回']], summary: ['Summary', '1 chunk · 180–200字 · exam format', ['3回まで聞いてメモ → 要約 → Claude で添削', '本番のリスニング2（40点）と同じ形式。番組がなければ、過去問（第114回以降）の Listening 2 で']] };
+      add(t, { key: 'podcast', track: 'podcast', name: 'Podcast', min: pmode === 'summary' ? pm + 15 : pm, fixed: `${k}|podcast`, link: `#/listen/today/${pmode}`, lines: [{ head: PMODE[pmode][0], meta: PMODE[pmode][1], notes: PMODE[pmode][2] }] });
       // 日文中訳ドリル（10月から火・金。P1 は短い記事で）：本物の記事から出題し、Claude の添削で弱点と表現を貯める
       if ([2, 5].includes(dow(t))) add(t, { key: 'jzdrill', track: 'jzdrill', name: 'JA → ZH Drill', min: ph === 0 ? 25 : 30, fixed: `${k}|jzdrill`, link: '#/zhdrill', lines: [{ head: '日文中訳ドリル', meta: ph === 0 ? '1 article · 150字' : '1 article · 150–250字', notes: ['記事を選ぶ → Claude で出題 → スクリブルで訳す → 提出して添削', '覚えるべき表現を表現ノートに保存し、日本語 → 中国語で言えるか確かめる'] }] });
       // P1 は多読（やさしめの文章を大量に）、P2 以降は試験レベルの長文

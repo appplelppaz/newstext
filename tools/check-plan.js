@@ -51,6 +51,23 @@ function checkDaily(label, res) {
 }
 checkDaily('default', r);
 checkDaily('rest Wed', Plan.build({ rest: [3] }, {}));
+// 要約（現行形式のリスニング2）が、どの週にも1回あること（休みの曜日が水曜でも）
+function checkSummary(label, res) {
+  const weeks = new Map();
+  for (const [day, tasks] of res.days) {
+    const t = Plan.toT(day);
+    const mon = Plan.toS(t - ((Plan.dow(t) + 6) % 7) * Plan.DAY);
+    const n = tasks.filter((x) => x.track === 'podcast' && x.link && x.link.endsWith('/summary')).length;
+    weeks.set(mon, (weeks.get(mon) || 0) + n);
+  }
+  for (const [w, n] of weeks) check(n === 1, `${label}: week of ${w} has ${n} summary sessions`);
+}
+checkSummary('default', r);
+checkSummary('rest Wed', Plan.build({ rest: [3] }, {}));
+// 本番形式の模試は現行形式（第114回以降）の回で行う
+for (const [day, tasks] of r.days) for (const t of tasks) {
+  if (t.paper && t.lines[0].notes.includes('Mock')) check(+t.paper.split('-')[1] >= 114, `mock on ${day} uses old-format ${t.paper}`);
+}
 const mins = [...r.days.values()].map((ts) => ts.reduce((s, t) => s + t.min, 0));
 console.log('days:', r.days.size, 'min/day avg', Math.round(mins.reduce((a, b) => a + b, 0) / mins.length), 'max', Math.max(...mins), 'min', Math.min(...mins));
 console.log('idioms:', Plan.idiomList().length, 'translations:', Plan.translationList().length);

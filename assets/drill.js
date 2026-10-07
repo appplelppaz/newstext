@@ -170,7 +170,7 @@ ${(c.question || '').trim() || 'なし'}
 
 ## 返答の形式
 1. まず、読みやすい日本語で添削を書く。
-   - 総合点（100点満点）と一言評価（合格目安80点との比較）
+   - 総合点（100点満点）と一言評価（このアプリの練習目標80点との比較。公式の合格基準ではない）
    - 文ごとに：問題文／受験者の訳／模範訳（受験者の訳を最小限直したもの）／原文、そして減点と指摘（【誤り】【改善】【別解OK】、該当部分→改善案、理由）
    - 覚えるべき表現（中国語・拼音・意味・使い方）
    - 良かった点と次の課題
@@ -386,7 +386,7 @@ ${(c.question || '').trim() || 'なし'}
     const r = 56;
     const C = 2 * Math.PI * r;
     const a = 0.8 * 2 * Math.PI;
-    return `<div class="jz-ring" role="img" aria-label="${score}点（合格目安${PASS}点）"><svg viewBox="0 0 132 132" aria-hidden="true">
+    return `<div class="jz-ring" role="img" aria-label="${score}点（練習目標${PASS}点）"><svg viewBox="0 0 132 132" aria-hidden="true">
         <circle cx="66" cy="66" r="${r}" fill="none" stroke="var(--line)" stroke-width="8"/>
         <circle cx="66" cy="66" r="${r}" fill="none" stroke="${score >= PASS ? 'var(--ink)' : 'var(--accent)'}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - score / 100)}"/>
         <line x1="${66 + 48 * Math.cos(a)}" y1="${66 + 48 * Math.sin(a)}" x2="${66 + 64 * Math.cos(a)}" y2="${66 + 64 * Math.sin(a)}" stroke="var(--ink)" stroke-width="2"/></svg>
@@ -499,7 +499,7 @@ ${(c.question || '').trim() || 'なし'}
     const pts = scores.map((v, i) => `${x(i)},${y(v)}`).join(' ');
     return `<svg class="jz-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="得点の推移">
       ${[0, 50, 100].map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`).join('')}
-      <line x1="${L}" x2="${W - R}" y1="${y(PASS)}" y2="${y(PASS)}" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="5 4"/><text x="${W - R}" y="${y(PASS) - 5}" text-anchor="end" font-size="11" fill="var(--muted)">合格目安 ${PASS}</text>
+      <line x1="${L}" x2="${W - R}" y1="${y(PASS)}" y2="${y(PASS)}" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="5 4"/><text x="${W - R}" y="${y(PASS) - 5}" text-anchor="end" font-size="11" fill="var(--muted)">練習目標 ${PASS}</text>
       ${scores.length > 1 ? `<polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>` : ''}
       ${scores.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="${i === scores.length - 1 ? 5 : 3}" fill="var(--accent)"/>`).join('')}
       <text x="${L}" y="${H - 4}" font-size="11" fill="var(--muted)">直近${scores.length}回</text></svg>`;
@@ -531,7 +531,7 @@ ${(c.question || '').trim() || 'なし'}
       if (!A.length) return '';
       const sc = A.slice(0, 5).map((a) => a.score);
       const avg = Math.round(sc.reduce((s, v) => s + v, 0) / sc.length);
-      return `<h2 class="section label">日文中訳ドリル</h2><div class="chips"><a class="chip" href="#/zhdrill/log">${A.length} 問 · 記録</a><span class="chip ${avg >= PASS ? 'accent' : ''}">直近5回 ${avg} 点（合格目安 ${PASS}）</span></div>`;
+      return `<h2 class="section label">日文中訳ドリル</h2><div class="chips"><a class="chip" href="#/zhdrill/log">${A.length} 問 · 記録</a><span class="chip ${avg >= PASS ? 'accent' : ''}">直近5回 ${avg} 点（練習目標 ${PASS}）</span></div>`;
     },
     exportData: () => ({ st, corpus: DB.corpus, attempts: DB.attempts }),
     async importData(d) {

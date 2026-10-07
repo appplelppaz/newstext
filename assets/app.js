@@ -181,22 +181,25 @@
   // 余りの枠（Catch-up / Weak sections）があれば、そこから時間をもらう
   function withExtras(k) {
     const base = tasksOf(k).map((t) => ({ ...t }));
-    let extra = [...ST.focusTasks(k), ...ST.extraTasks(k)];
+    const extra = [...ST.focusTasks(k), ...ST.extraTasks(k)];
     // 書き取りの正答率（直近2週）が8割未満なら、平日に Podcast dictation を足す
     const dr = k === todayS() ? LS.dictRate(14) : null;
     const wd = dow(toT(k));
     if (dr != null && dr < 0.8 && wd >= 1 && wd <= 5 && !S.rest.includes(wd)) extra.push({ key: 'dfocus', track: 'dfocus', name: 'Focus', min: 15, fixed: `${k}|dfocus`, link: '#/listen/today/dictation', lines: [{ head: 'Podcast dictation', meta: `${Math.round(dr * 100)}% in 14 days · +10 sentences`, notes: ['聞き取れなかった字を Hanzi で書き、同じ文を Shadow で重ねる'] }] });
-    if (!extra.length) return base;
     const sum = (l) => l.reduce((s, t) => s + t.min, 0);
+    // 弱点の課題は、余りの枠（Catch-up / Weak sections）と1日の時間の余裕の中に入る分だけ。入らないものは見送る
     const flex = base.find((t) => t.track === 'flex' || t.track === 'ppfix');
-    const room = Math.max(0, (+S.daily || 180) + 15 - sum(base) + (flex ? flex.min - 10 : 0));
-    if (sum(extra) > room) {
-      const f = room / sum(extra);
-      extra = extra.map((t) => ({ ...t, min: Math.max(10, Math.round((t.min * f) / 5) * 5) }));
+    let room = Math.max(0, (+S.daily || 180) + 15 - sum(base) + (flex ? flex.min : 0));
+    const kept = [];
+    extra.forEach((t) => { if (t.min <= room) { kept.push(t); room -= t.min; } });
+    if (flex) {
+      flex.min = Math.max(0, flex.min - sum(kept));
+      if (flex.min < 10) base.splice(base.indexOf(flex), 1);
     }
-    if (flex) flex.min = Math.max(10, flex.min - sum(extra));
-    return [...base, ...extra];
+    withExtras.skipped = extra.length - kept.length;
+    return [...base, ...kept];
   }
+
 
   function viewToday(k) {
     const today = todayS();
@@ -233,6 +236,8 @@
       <div class="stats">
         ${ph ? `<span class="chip">${ph.id} · ${ph.name}</span>` : ''}
         ${total ? `<span class="chip">${hm(total)}</span>` : ''}
+        ${total > (+S.daily || 180) + 30 ? `<span class="chip accent" title="過去問など時間の決まった課題で、1日の時間を超えています">${hm(total - (+S.daily || 180))} over</span>` : ''}
+        ${withExtras.skipped ? `<span class="chip" title="時間に入らなかった弱点の課題。明日以降に入ります">${withExtras.skipped} extra skipped</span>` : ''}
         <span class="chip">Streak ${streak()}</span>
         ${nextCp >= 0 ? `<a class="chip" href="#/check/${nextCp}">CP${nextCp} · ${fmt(toS(cpDays[nextCp]))}</a>` : ''}
         ${od ? `<button class="chip accent" id="rebalance">${od} overdue · Rebalance</button>` : ''}
@@ -701,7 +706,7 @@
           <div class="actions" style="margin:0"><button class="btn" id="rb">Rebalance from today</button>${(S.anchors || []).length ? '<button class="btn" id="unrb">Reset plan</button>' : ''}</div></div>
         <div class="field"><span class="label">Offline</span><div class="note-box rubric" id="offline"></div></div>
         <div class="field"><span class="label">Data</span>
-          <div class="actions" style="margin:0"><button class="btn" id="export">Export</button><label class="btn">Import<input type="file" id="import" accept="application/json" hidden></label><button class="btn" id="wipe">Erase</button></div></div>
+          <div class="actions" style="margin:0"><button class="btn" id="export">Export</button><label class="muted small"><input type="checkbox" id="exInk" checked> 手書きメモも含める</label><label class="btn">Import<input type="file" id="import" accept="application/json" hidden></label><button class="btn" id="wipe">Erase</button></div></div>
       </div>`;
 
     offlineInfo();
@@ -729,8 +734,10 @@
     app.querySelector('#rb').addEventListener('click', () => { rebalance(); viewSettings(); });
     const un = app.querySelector('#unrb');
     if (un) un.addEventListener('click', () => { S.anchors = []; saveSettings(); toast('Reset'); viewSettings(); });
-    app.querySelector('#export').addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify({ settings: S, done, fixed, srs, drafts, study: ST.exportData(), pod: LS.exportData(), jz: DR.exportData() }, null, 1)], { type: 'application/json' });
+    app.querySelector('#export').addEventListener('click', async () => {
+      // 手書きメモ（聞き取り・要約のメモ帳）は IndexedDB にあるので、選んだときだけ一緒に書き出す
+      const ink = app.querySelector('#exInk').checked ? await window.Ink.exportAll() : undefined;
+      const blob = new Blob([JSON.stringify({ settings: S, done, fixed, srs, drafts, study: ST.exportData(), pod: LS.exportData(), jz: DR.exportData(), ink }, null, 1)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `level1-${todayS()}.json`;
@@ -748,9 +755,10 @@
         if (d.study) ST.importData(d.study);
         if (d.pod) LS.importData(d.pod);
         if (d.jz) DR.importData(d.jz);
+        const nInk = d.ink ? await window.Ink.importAll(d.ink) : 0;
         saveSettings();
         queue = null;
-        toast('Imported');
+        toast(nInk ? `Imported · 手書きメモ ${nInk}` : 'Imported');
         viewSettings();
       } catch (err) {
         toast('Invalid file');
