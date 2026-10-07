@@ -272,7 +272,7 @@ window.Listen = function Listen(ctx) {
           <div class="row" style="margin-top:12px"><button class="btn primary" id="dplay">▶ Play</button><button class="btn" id="dctx">▶ with context</button><span class="spacer"></span><span class="muted small">何度聞いてもよい</span></div>
           <div id="din" style="margin-top:12px"></div>
           ${res ? `<div class="src diff serif">${res.d.html}</div>
-            <p class="small"><span class="${res.miss ? 'ng' : 'ok'}">${res.miss ? '✗' : '✓'}</span> ${res.n - res.miss} / ${res.n} 字${res.extra ? ` · 余分な字 ${res.extra}` : ''}${res.miss ? ' · 聞き取れなかった字は Hanzi へ' : ''}</p>
+            <p class="small"><span class="${res.miss ? 'ng' : 'ok'}">${res.miss ? '✗' : '✓'}</span> ${res.n - res.miss} / ${res.n} 字${res.extra ? ` · 余分な字 ${res.extra}` : ''}${res.hz && res.hz.length ? ` · Hanzi に追加：${esc(res.hz.join(' '))}` : res.miss ? ' · もう一度聞いて確かめる' : ''}</p>
             ${s.py ? `<p class="muted small">${esc(s.py)}</p>` : ''}${s.ja ? `<p class="small">${esc(s.ja)}</p>` : ''}${wordsHTML(s)}` : ''}
         </div>
         <div class="grade one">${res ? '<button class="btn primary" id="dnext">Next</button>' : '<button class="btn primary" id="dcheck">Check</button>'}</div>`;
@@ -293,7 +293,9 @@ window.Listen = function Listen(ctx) {
         st.dict.n += n; st.dict.ok += n - hm;
         const g = day(); g.chars += n; g.ok += n - hm; g.sents++;
         save();
-        if (val.trim()) ST.hzFromDiff({ ...d, missIdx: miss }, s.o, `Podcast · ${p.title}`.slice(0, 40));
+        // Hanzi に入れるのは「ほぼ聞き取れたのに書けなかった字」だけ（1文に3字まで）。半分以上聞き取れなかった文は聞き取りの問題なので入れない
+        res.hz = val.trim() && hm <= n / 2 ? [...new Set(miss.filter((k) => Ink.isHan(m[k])).map((k) => m[k]))].slice(0, 3) : [];
+        if (res.hz.length) ST.hzFromDiff({ ...d, missIdx: miss.filter((k) => res.hz.includes(m[k])) }, s.o, `Podcast · ${p.title}`.slice(0, 40));
         render();
       });
     };
