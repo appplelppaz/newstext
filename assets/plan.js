@@ -93,16 +93,30 @@
       const secs = tocOf(S, `training.${s.id}`, s.sections || []);
       for (let q = 1; q <= s.q; q++) {
         const sec = secs.filter((x) => x[0] <= q).pop();
-        out.push({ id: `tb-${s.id}-${q}`, step: s, n: q, sec: sec ? { title: sec[1], page: sec[2] } : null, w: s.w || 1 });
+        out.push({ id: `tb-${s.id}-${q}`, step: s, n: q, sec: sec ? { title: sec[1], page: sec[2] } : null, w: s.w || 1, ...tbPages(s, q) });
       }
     });
     return out;
   }
-  // キクタン：週・Day の見出し（weeks: [[最初の Day, 見出し]]）
+  // 問題番号からページの目安を出す（STEP の問題・解答のページ数を問題数で割る。1ページの問題数は一定ではないので「約」）
+  function tbPages(s, q) {
+    if (!s.qp || !s.ap) return {};
+    const steps = root.BOOKS.training.steps;
+    const next = steps[steps.indexOf(s) + 1];
+    const end = next ? next.qp : root.BOOKS.training.appendix;
+    const at = (a, b) => a + Math.floor(((q - 1) * (b - a)) / s.q);
+    return { qpg: at(s.qp, s.ap), apg: at(s.ap, end) };
+  }
+  // キクタン：週・Day の見出し（weeks: [[最初の Day, 見出し]]）と、その Day の見出し語番号
   function kkUnits(S, pre) {
     const K = root.BOOKS.kikutan;
     const weeks = tocOf(S, 'kikutan', K.weeks || []);
-    return seq(K.days, (n) => { const w = weeks.filter((x) => x[0] <= n).pop(); return { id: `${pre}-${n}`, n, title: w ? w[1] : '', w: 1 }; });
+    const nums = (n) => { const r = (K.words || []).filter((x) => x[0] <= n).pop(); if (!r) return {}; const a = r[2] + (n - r[0]) * r[1]; return { w0: a, w1: a + r[1] - 1 }; };
+    return seq(K.days, (n) => {
+      const w = weeks.filter((x) => x[0] <= n).pop();
+      const ex = (K.extras || []).find((x) => x[0] === n);
+      return { id: `${pre}-${n}`, n, title: w ? w[1] : '', extra: ex ? ex[1] : '', w: 1, ...nums(n) };
+    });
   }
 
   // ---------- トラック定義 ----------
@@ -257,12 +271,18 @@
       case 'tb1': case 'tb2': case 'tbm1': case 'tbm2':
         return groupRuns(units, (u) => u.step.id).map((g) => {
           const s = g.units[0].step;
-          if (s.mock) return { head: `${s.level}  Mock`, meta: 'timed', notes: [s.label] };
+          if (s.mock) return { head: `${s.level}  Mock`, meta: 'timed', notes: [s.label, s.qp ? `問題 p.${s.qp}〜 · 解答 p.${s.ap}〜` : ''].filter(Boolean) };
           const secs = groupRuns(g.units.filter((u) => u.sec), (u) => u.sec.title).map((x) => `${x.key}${x.units[0].sec.page ? `（p.${x.units[0].sec.page}〜）` : ''}`);
-          return { head: `${s.level}  STEP ${s.step}`, meta: `Q${rng(g.units[0].n, g.units[g.units.length - 1].n)}`, notes: [s.label, ...secs] };
+          const a = g.units[0];
+          const b = g.units[g.units.length - 1];
+          const pages = a.qpg ? `問題 p.${rng(a.qpg, b.qpg)} · 解答 p.${rng(a.apg, b.apg)}（約）` : '';
+          return { head: `${s.level}  STEP ${s.step}`, meta: `Q${rng(a.n, b.n)}`, notes: [s.label, ...secs, pages].filter(Boolean) };
         });
-      case 'kk1': case 'kk2':
-        return [{ head: `Day ${rng(first.n, last.n)}`, meta: tr.key === 'kk2' ? 'review' : '', notes: [...new Set(units.map((u) => u.title).filter(Boolean))] }];
+      case 'kk1': case 'kk2': {
+        const no = (x) => String(x).padStart(3, '0');
+        const nums = first.w0 ? ` · No.${rng(no(first.w0), no(last.w1))}` : '';
+        return [{ head: `Day ${rng(first.n, last.n)}${nums}`, meta: tr.key === 'kk2' ? 'review' : '', notes: [...new Set(units.map((u) => u.title).filter(Boolean)), ...units.map((u) => u.extra).filter(Boolean)] }];
+      }
       case 'hsk': {
         const c = root.BOOKS.hsk.chunk;
         const a = (first.n - 1) * c + 1;

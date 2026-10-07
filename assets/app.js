@@ -390,7 +390,7 @@
         const ok = g.us.filter((u) => done[u.id]).length;
         const d0 = when.get(a.id);
         const d1 = when.get(b.id);
-        return `${head}<div class="toc-row ${ok === g.us.length ? 'done' : ''}"><span class="n">Q${a.n}${b.n !== a.n ? `–${b.n}` : ''}</span><span class="t">${esc(g.sec ? g.sec.title : g.step.mock ? '模擬試験' : g.step.label)}</span><span class="p">${g.sec && g.sec.page ? `p.${g.sec.page}` : `${ok}/${g.us.length}`}</span>${d0 ? `<a class="d" href="#/today/${d0}">${md(d0)}</a>` : '<span class="d">–</span>'}<span class="d2">${d1 && d1 !== d0 ? `→ ${md(d1)}` : ''}</span></div>`;
+        return `${head}<div class="toc-row ${ok === g.us.length ? 'done' : ''}"><span class="n">Q${a.n}${b.n !== a.n ? `–${b.n}` : ''}</span><span class="t">${esc(g.sec ? g.sec.title : g.step.mock ? '模擬試験' : g.step.label)}${a.qpg ? `<small> 問題 p.${a.qpg === b.qpg ? a.qpg : `${a.qpg}–${b.qpg}`} · 解答 p.${a.apg === b.apg ? a.apg : `${a.apg}–${b.apg}`}</small>` : ''}</span><span class="p">${g.sec && g.sec.page ? `p.${g.sec.page}` : `${ok}/${g.us.length}`}</span>${d0 ? `<a class="d" href="#/today/${d0}">${md(d0)}</a>` : '<span class="d">–</span>'}<span class="d2">${d1 && d1 !== d0 ? `→ ${md(d1)}` : ''}</span></div>`;
       }).join('');
       editor = { hint: '1行に1つ：「STEP の記号 最初の問題番号 見出し ページ」（例：p1 1 政治・経済 12）。記号は p1–p5（準1級）、g1–g5（1級）', text: B.training.steps.flatMap((s) => ((S.toc[`training.${s.id}`] || s.sections || []).map((x) => `${s.id} ${x[0]} ${x[1]}${x[2] ? ` ${x[2]}` : ''}`))).join('\n') };
     } else {
@@ -401,10 +401,11 @@
       body = weeks.map((w, i) => {
         const a = w[0];
         const b = w[w.length - 1];
-        const titles = [...new Set(w.map((u) => u.title).filter(Boolean))].join(' / ');
+        const titles = [...new Set(w.map((u) => u.title).filter(Boolean)), ...w.map((u) => u.extra).filter(Boolean)].join(' / ');
+        const no = (x) => String(x).padStart(3, '0');
         const ok = w.filter((u) => done[u.id]).length;
         const rv = r.find((x) => x.n === a.n);
-        return `<div class="toc-row ${ok === w.length ? 'done' : ''}"><span class="n">W${i + 1}</span><span class="t">Day ${a.n}–${b.n}${titles ? ` · ${esc(titles)}` : ''}</span><span class="p">${ok}/${w.length}</span>${dateCell(a.id)}<span class="d2">${rv && when.get(rv.id) ? `review ${md(when.get(rv.id))}` : ''}</span></div>`;
+        return `<div class="toc-row ${ok === w.length ? 'done' : ''}"><span class="n">W${i + 1}</span><span class="t">Day ${a.n}–${b.n}${a.w0 ? ` · No.${no(a.w0)}–${no(b.w1)}` : ''}${titles ? ` · ${esc(titles)}` : ''}</span><span class="p">${ok}/${w.length}</span>${dateCell(a.id)}<span class="d2">${rv && when.get(rv.id) ? `review ${md(when.get(rv.id))}` : ''}</span></div>`;
       }).join('');
       editor = { hint: '1行に1つ：「最初の Day 見出し」（例：1 名詞①）', text: (S.toc.kikutan || B.kikutan.weeks || []).map((x) => `${x[0]} ${x[1]}`).join('\n') };
     }
