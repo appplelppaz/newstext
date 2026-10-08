@@ -210,6 +210,7 @@ h2.section { margin: 32px 0 12px; }
 .card .tap { margin-top: auto; padding-top: 24px; text-align: center; color: var(--faint); font-size: 12px; letter-spacing: .1em; }
 .grade { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .grade .btn { padding: 14px; }
+.grade.three { grid-template-columns: 1fr 1fr 1fr; }
 .search { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); margin: 16px 0 8px; }
 .list { list-style: none; margin: 0; padding: 0; }
 .list li { border-bottom: 1px solid var(--line); }
