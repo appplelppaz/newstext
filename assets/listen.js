@@ -97,7 +97,9 @@ window.Listen = function Listen(ctx) {
 
   // ---------- 再生 ----------
   // 1つの <audio> を使い回し、区間（b〜e）だけ鳴らす。聞いた時間は日ごとに記録する
-  const pl = { a: null, id: null, url: null, end: null, onEnd: null, t0: 0, rate: store.get('podRate', 1), raf: 0 };
+  // held：一時停止中（区間と終わりの処理を残したまま。もう一度押すとその場から続ける）
+  const pl = { a: null, id: null, url: null, end: null, onEnd: null, t0: 0, rate: store.get('podRate', 1), raf: 0, held: false, onState: null, autoT: 0 };
+  const state = () => { if (pl.onState) pl.onState(); };
   function audioFor(p) {
     if (!p.audio) return null;
     if (pl.id !== p.id) {
@@ -107,7 +109,8 @@ window.Listen = function Listen(ctx) {
       pl.a = new Audio(pl.url);
       pl.a.preload = 'auto';
       pl.id = p.id;
-      pl.a.addEventListener('pause', logTime);
+      pl.a.addEventListener('pause', () => { logTime(); state(); });
+      pl.a.addEventListener('play', state);
       pl.a.addEventListener('ended', () => finish());
     }
     pl.a.playbackRate = pl.rate;
@@ -123,17 +126,19 @@ window.Listen = function Listen(ctx) {
     pl.raf = requestAnimationFrame(tick);
   }
   function finish() {
+    pl.held = false;
     if (pl.a && !pl.a.paused) pl.a.pause();
     cancelAnimationFrame(pl.raf);
     const f = pl.onEnd;
     pl.end = null; pl.onEnd = null;
+    state();
     if (f) f();
   }
   async function play(p, b, e, o = {}) {
     const a = audioFor(p);
     if (!a) { toast('音声がありません（mp3 を Import で足してください）'); return false; }
     stop();
-    pl.end = e; pl.onEnd = o.onEnd || null; pl.onTime = o.onTime || null;
+    pl.end = e; pl.onEnd = o.onEnd || null; pl.onTime = o.onTime || null; pl.tag = o.tag || '';
     try {
       a.currentTime = b;
       await a.play();
@@ -143,10 +148,39 @@ window.Listen = function Listen(ctx) {
     return true;
   }
   function stop() {
+    clearTimeout(pl.autoT);
     cancelAnimationFrame(pl.raf);
-    pl.onEnd = null; pl.end = null;
+    pl.onEnd = null; pl.end = null; pl.held = false; pl.tag = '';
     if (pl.a && !pl.a.paused) pl.a.pause();
+    state();
   }
+  // 一時停止と再開（区間・終わりの処理はそのまま）
+  const playing = () => !!(pl.a && !pl.a.paused && pl.end != null);
+  function hold() {
+    if (!playing()) return;
+    clearTimeout(pl.autoT);
+    cancelAnimationFrame(pl.raf);
+    pl.held = true;
+    pl.a.pause();
+  }
+  async function resume() {
+    if (!pl.held || !pl.a) return false;
+    pl.held = false;
+    try { await pl.a.play(); } catch (err) { toast('再生できませんでした'); return false; }
+    pl.t0 = performance.now();
+    pl.raf = requestAnimationFrame(tick);
+    return true;
+  }
+  // 再生中なら止め、一時停止中ならその場から続け、どちらでもなければ start() で鳴らし始める
+  function toggle(start) {
+    if (playing()) hold();
+    else if (pl.held) resume();
+    else start();
+  }
+  // ボタンの表示を再生の状態に合わせる（▶ と ❚❚）
+  function bindState(fn) { pl.onState = fn; fn(); }
+  const at = () => (pl.a ? pl.a.currentTime : -1);
+  const inSeg = (s) => { const t = at(); return t >= s.b - 0.05 && t < s.e + 0.05; };
   const rateHTML = () => `<select class="rate" id="prate" aria-label="Speed">${[0.75, 0.9, 1, 1.25].map((r) => `<option value="${r}" ${r === pl.rate ? 'selected' : ''}>${r}×</option>`).join('')}</select>`;
   function bindRate() {
     const s = app.querySelector('#prate');
@@ -236,11 +270,14 @@ window.Listen = function Listen(ctx) {
           <div class="row"><span class="label">Part ${c + 1} / ${cs.length} · ${mmss(b)}–${mmss(e)}</span><span class="spacer"></span>
             <button class="btn sm" id="lprev" ${c ? '' : 'disabled'}>Prev</button><button class="btn sm" id="lnext" ${c < cs.length - 1 ? '' : 'disabled'}>Next</button></div>
           <div class="row" style="margin-top:12px"><button class="btn primary" id="lplay">▶ Play part</button><button class="btn" id="lstop">■</button><span class="spacer"></span><button class="btn" id="lopen">${open ? 'Hide script' : 'Show script'}</button></div>
-          <p class="muted small hint">${open ? '文を押すとその文だけ鳴ります。' : 'まず原稿を見ずに聞き、何の話かを一言で言えるか確かめてから原稿を開く。'}</p>
+          <p class="muted small hint">${open ? '鳴っている文を押すと一時停止、もう一度押すとその場から続きます。ほかの文を押すと、その文だけ鳴ります。' : 'まず原稿を見ずに聞き、何の話かを一言で言えるか確かめてから原稿を開く。Play を押すと一時停止・再開。'}</p>
         </div>
         ${open ? `<div class="script">${seg.map((i) => { const s = p.segs[i]; return `<div class="pseg" data-i="${i}"><div class="zh serif">${esc(s.o)}</div>${s.py ? `<div class="py muted small">${esc(s.py)}</div>` : ''}${s.ja ? `<div class="ja small">${esc(s.ja)}</div>` : ''}${wordsHTML(s)}</div>`; }).join('')}</div>` : ''}`;
       const hl = (t) => host.querySelectorAll('.pseg').forEach((el) => { const s = p.segs[+el.dataset.i]; el.classList.toggle('now', t >= s.b && t < s.e); });
-      host.querySelector('#lplay').addEventListener('click', () => play(p, b, e, { onTime: hl }));
+      const btn = host.querySelector('#lplay');
+      const part = () => pl.tag === 'part';
+      bindState(() => { btn.textContent = part() && playing() ? '❚❚ Pause' : part() && pl.held ? '▶ Resume' : '▶ Play part'; });
+      btn.addEventListener('click', () => { const go = () => play(p, b, e, { onTime: hl, tag: 'part' }); if (part()) toggle(go); else go(); });
       host.querySelector('#lstop').addEventListener('click', stop);
       host.querySelector('#lopen').addEventListener('click', () => { open = !open; render(); });
       host.querySelector('#lprev').addEventListener('click', () => { c--; st.listen = c; save(); stop(); render(); });
@@ -248,7 +285,9 @@ window.Listen = function Listen(ctx) {
       host.querySelectorAll('.pseg').forEach((el) => el.addEventListener('click', (ev) => {
         if (ev.target.closest('button')) return;
         const s = p.segs[+el.dataset.i];
-        play(p, s.b, s.e, { onTime: hl });
+        // 鳴っている（止めている）文を押したら一時停止・再開、ほかの文ならその文を鳴らす
+        if ((playing() || pl.held) && inSeg(s)) toggle(() => {});
+        else play(p, s.b, s.e, { onTime: hl });
       }));
     };
     render();
@@ -277,9 +316,16 @@ window.Listen = function Listen(ctx) {
         </div>
         <div class="grade one">${res ? '<button class="btn primary" id="dnext">Next</button>' : '<button class="btn primary" id="dcheck">Check</button>'}</div>`;
       if (!res) ST.scribbleInput(host.querySelector('#din'), { short: true, noChecks: true, text: () => val, setText: (v) => { val = v; }, placeholder: '聞こえた文を漢字で書く' });
-      host.querySelector('#dplay').addEventListener('click', () => play(p, s.b, s.e));
+      const db = host.querySelector('#dplay');
+      const dc = host.querySelector('#dctx');
+      let which = 'dplay';
+      bindState(() => {
+        db.textContent = which === 'dplay' && playing() ? '❚❚ Pause' : which === 'dplay' && pl.held ? '▶ Resume' : '▶ Play';
+        dc.textContent = which === 'dctx' && playing() ? '❚❚ Pause' : which === 'dctx' && pl.held ? '▶ Resume' : '▶ with context';
+      });
+      db.addEventListener('click', () => { if (which !== 'dplay') stop(); which = 'dplay'; toggle(() => play(p, s.b, s.e)); });
       // 前の文から続けて聞く（文の切れ目がつかみにくいとき）
-      host.querySelector('#dctx').addEventListener('click', () => { const i = list[st.dict.i]; play(p, p.segs[Math.max(0, i - 1)].b, s.e); });
+      dc.addEventListener('click', () => { if (which !== 'dctx') stop(); which = 'dctx'; toggle(() => { const i = list[st.dict.i]; play(p, p.segs[Math.max(0, i - 1)].b, s.e); }); });
       host.querySelector('#dskip').addEventListener('click', () => { st.dict.i++; save(); val = ''; res = null; stop(); render(); });
       if (res) host.querySelector('#dnext').addEventListener('click', () => { st.dict.i++; save(); val = ''; res = null; stop(); render(); });
       else host.querySelector('#dcheck').addEventListener('click', () => {
@@ -300,23 +346,48 @@ window.Listen = function Listen(ctx) {
   }
 
   // シャドーイング：原稿を見て3回重ねる → 原稿を隠して2回
+  // Auto：1文を5回、間をあけて自動で繰り返し、終わったら次の文へ進む（原稿や ❚❚ を押すと一時停止）
+  const REPS = 5;
   function mShadow(p, host) {
     const list = shadowList(p);
     const st = P(p.id);
     let k = 0;
+    let auto = !!pod._shadowAuto;
+    // 次の再生までの間：言い終える時間として、文の長さの半分（1〜4秒）
+    const gap = (s) => Math.min(4000, Math.max(1000, (s.e - s.b) * 500));
+    const once = () => {
+      const s = p.segs[list[st.shadow]];
+      play(p, s.b, s.e, { onEnd: () => {
+        k = Math.min(REPS, k + 1);
+        render();
+        if (!auto) return;
+        pl.autoT = setTimeout(() => {
+          if (k >= REPS) { st.shadow++; save(); k = 0; render(); }
+          once();
+        }, gap(s));
+      } });
+    };
     const render = () => {
       if (st.shadow >= list.length) st.shadow = 0;
       const s = p.segs[list[st.shadow]];
       const hide = k >= 3;
       host.innerHTML = `<div class="card shadow-card">
-          <div class="row"><span class="label">Sentence ${st.shadow + 1} / ${list.length}</span><span class="spacer"></span><span class="chips">${[0, 1, 2, 3, 4].map((x) => `<span class="dot ${x < k ? 'on' : ''}"></span>`).join('')}</span></div>
-          <div class="shadow-text ${hide ? 'hidden' : ''}"><div class="zh serif">${esc(s.o)}</div>${s.py ? `<div class="py muted">${esc(s.py)}</div>` : ''}</div>
+          <div class="row"><span class="label">Sentence ${st.shadow + 1} / ${list.length}</span><span class="spacer"></span><span class="chips">${Array.from({ length: REPS }, (_, x) => `<span class="dot ${x < k ? 'on' : ''}"></span>`).join('')}</span></div>
+          <div class="shadow-text ${hide ? 'hidden' : ''}" id="stext"><div class="zh serif">${esc(s.o)}</div>${s.py ? `<div class="py muted">${esc(s.py)}</div>` : ''}</div>
           ${hide ? '<p class="muted small">原稿を隠して、音声に重ねて言う</p>' : '<p class="muted small">原稿を見ながら、音声に少し遅れて重ねて言う</p>'}
+          <p class="muted small">文を押すと一時停止、もう一度押すとその場から続きます。</p>
           ${s.ja ? `<details class="ja-det"><summary>日本語訳</summary><div>${esc(s.ja)}</div></details>` : ''}
         </div>
-        <div class="grade"><button class="btn" id="splay">▶ Play ${Math.min(k + 1, 5)} / 5</button><button class="btn ${k >= 5 ? 'primary' : ''}" id="snext">Next</button></div>`;
-      host.querySelector('#splay').addEventListener('click', () => play(p, s.b, s.e, { onEnd: () => { k = Math.min(5, k + 1); render(); } }));
-      host.querySelector('#snext').addEventListener('click', () => { st.shadow++; save(); k = 0; stop(); render(); });
+        <div class="grade three"><button class="btn ${auto ? 'primary' : ''}" id="sauto" aria-pressed="${auto}">${auto ? '■ Auto' : '↻ Auto'}</button><button class="btn" id="splay">▶ Play ${Math.min(k + 1, REPS)} / ${REPS}</button><button class="btn ${k >= REPS ? 'primary' : ''}" id="snext">Next</button></div>`;
+      const sp = host.querySelector('#splay');
+      bindState(() => { sp.textContent = playing() ? '❚❚ Pause' : pl.held ? '▶ Resume' : `▶ Play ${Math.min(k + 1, REPS)} / ${REPS}`; });
+      sp.addEventListener('click', () => toggle(once));
+      host.querySelector('#stext').addEventListener('click', () => toggle(once));
+      host.querySelector('#sauto').addEventListener('click', () => {
+        auto = !auto; pod._shadowAuto = auto; save();
+        if (auto) { if (k >= REPS) { st.shadow++; save(); k = 0; } render(); if (pl.held) resume(); else if (!playing()) once(); } else { stop(); render(); }
+      });
+      host.querySelector('#snext').addEventListener('click', () => { st.shadow++; save(); k = 0; stop(); render(); if (auto) once(); });
     };
     render();
   }
@@ -353,14 +424,15 @@ window.Listen = function Listen(ctx) {
         </div>
       </div>`;
     const $ = (q) => host.querySelector(q);
-    const upd = () => { $('#spc').textContent = `${plays()} / 3`; $('#sp').disabled = plays() >= 3 && !shown; };
-    upd();
+    const upd = () => { $('#spc').textContent = `${plays()} / 3`; $('#sp').disabled = plays() >= 3 && !shown && !playing() && !pl.held; };
+    bindState(() => { $('#sp').textContent = playing() ? '❚❚ Pause' : pl.held ? '▶ Resume' : '▶ Play'; upd(); });
     Ink.pad($('.memo-pad'), { key: `${key}|memo`, ratio: 0.9 });
     ST.scribbleInput($('#sans'), { limit: SUM_LIMIT, text: () => st.sum[c] || '', setText: (v) => { st.sum[c] = v; save(); }, placeholder: `聞いた内容を${SUM_LIMIT[0]}〜${SUM_LIMIT[1]}字の中国語に要約する` });
-    $('#sp').addEventListener('click', async () => {
+    // 一時停止・再開は回数に数えない
+    $('#sp').addEventListener('click', () => toggle(async () => {
       if (plays() >= 3 && !shown) return;
       if (await play(p, b, e) && !shown) { st.plays[c] = plays() + 1; save(); upd(); }
-    });
+    }));
     $('#ss').addEventListener('click', stop);
     const go = (n) => { st.sumI = n; save(); stop(); mSummary(p, host); };
     $('#sprev').addEventListener('click', () => go(c - 1));
